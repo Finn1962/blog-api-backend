@@ -36,7 +36,7 @@ registerRouter.post(
 
   validateInputs,
 
-  async (req, res, next) => {
+  async (req, res) => {
     const { username, email, password } = matchedData(req);
 
     await prisma.User.create({

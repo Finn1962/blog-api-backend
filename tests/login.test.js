@@ -8,7 +8,7 @@ mock.module("../src/db/prisma.js", {
       User: {
         findUnique: mock.fn(async () => {
           return {
-            username: "test-user",
+            email: "test@example.com",
             password_hash: "some-random-hash",
             id: 1,
           };
@@ -35,11 +35,11 @@ describe("login", () => {
   test("should login user", async () => {
     const response = await request(app)
       .post("/login")
-      .send({ username: "test-user", password: "test-password" });
+      .send({ email: "test@example.com", password: "test-password" });
 
     assert.strictEqual(response.statusCode, 200);
     assert.deepStrictEqual(prisma.User.findUnique.mock.calls[0].arguments, [
-      { where: { username: "test-user" } },
+      { where: { email: "test@example.com" } },
     ]);
     assert.strictEqual(response.text, '{"message":"Login successful"}');
   });

@@ -6,32 +6,37 @@ import bcrypt from "bcrypt";
 import prisma from "../db/prisma.js";
 
 passport.use(
-  new LocalStrategy(async (username, password, done) => {
-    try {
-      const user = await prisma.User.findUnique({ where: { username } });
+  new LocalStrategy(
+    { usernameField: "email" },
+    async (email, password, done) => {
+      try {
+        const user = await prisma.User.findUnique({ where: { email } });
 
-      if (!user)
-        return done(null, false, {
-          message: "Incorrect username or password.",
-        });
+        if (!user)
+          return done(null, false, {
+            message: "Incorrect username or password",
+          });
 
-      const isMatch = await bcrypt.compare(password, user.password_hash);
+        const isMatch = await bcrypt.compare(password, user.password_hash);
 
-      if (!isMatch)
-        return done(null, false, {
-          message: "Incorrect username or password.",
-        });
+        if (!isMatch)
+          return done(null, false, {
+            message: "Incorrect username or password",
+          });
 
-      return done(null, user);
-    } catch (error) {
-      return done(error);
-    }
-  }),
+        return done(null, user);
+      } catch (error) {
+        return done(error);
+      }
+    },
+  ),
 );
 
 const jwtOptions = {
   jwtFromRequest: ExtractJwt.fromExtractors([
-    (req) => req?.cookies?.jwt || null,
+    (req) => {
+      return req?.cookies?.jwt || null;
+    },
   ]),
   secretOrKey: process.env.JWT_SECRET_KEY,
 };
@@ -39,8 +44,11 @@ const jwtOptions = {
 passport.use(
   new JwtStrategy(jwtOptions, async (jwtPayload, done) => {
     try {
-      if (jwtPayload) return done(null, jwtPayload);
-      else return done(null, false);
+      if (jwtPayload) {
+        return done(null, jwtPayload);
+      } else {
+        return done(null, false);
+      }
     } catch (err) {
       return done(err, false);
     }

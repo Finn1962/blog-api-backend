@@ -35,8 +35,6 @@ describe("login", () => {
       password: "test-password",
       confirmPassword: "test-password",
     });
-
-    console.log(response.text);
     assert.strictEqual(response.statusCode, 200);
     assert.deepStrictEqual(prisma.User.create.mock.calls[0].arguments, [
       {

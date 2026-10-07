@@ -19,7 +19,7 @@ model User {
   username           String?   @unique
   created_at         DateTime @default(now())
   role               Role   @default(USER)
-  posts              Post[]
+  blogs              Post[]
   comments           Comment[]
 }
 
@@ -38,7 +38,7 @@ model Comment {
   id        Int      @id @default(autoincrement())
   title     String
   content   String?
-  post      Post     @relation(fields: [post_id], references: [id])
+  blog      Post     @relation(fields: [post_id], references: [id])
   post_id    Int
   author    User     @relation(fields: [author_id], references: [id])
   author_id  Int
