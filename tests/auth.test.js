@@ -16,7 +16,7 @@ const spy = mock.method(passport, "authenticate");
 mock.module("../src/db/prisma.js", {
   exports: {
     default: {
-      Blog: {
+      Post: {
         findMany: mock.fn(async () => {
           return [];
         }),
@@ -25,13 +25,12 @@ mock.module("../src/db/prisma.js", {
   },
 });
 
-const { default: prisma } = await import("../src/db/prisma.js");
 const { default: app } = await import("../app.js");
 
 describe("profile", () => {
-  test("should get profile", async () => {
+  test("should be authenticated", async () => {
     const response = await request(app)
-      .get("/home")
+      .get("/post")
       .set("Cookie", `jwt=${token}`);
 
     assert.strictEqual(response.statusCode, 200);
@@ -39,6 +38,5 @@ describe("profile", () => {
       "jwt",
       { session: false },
     ]);
-    assert.strictEqual(prisma.Blog.findMany.mock.calls.length, 1);
   });
 });

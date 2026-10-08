@@ -12,6 +12,11 @@ enum Role {
   AUTHOR
 }
 
+enum Status {
+  DRAFT
+  PUBLIC
+}
+
 model User {
   id                 Int      @id @default(autoincrement())
   email              String?  @unique
@@ -27,9 +32,9 @@ model Post {
   id        Int      @id @default(autoincrement())
   title     String
   content   String?
-  published Boolean  @default(false)
   author    User     @relation(fields: [author_id], references: [id])
   author_id  Int
+  status    Status    @default(DRAFT)
   created_at DateTime @default(now())
   comments  Comment[]
 }
