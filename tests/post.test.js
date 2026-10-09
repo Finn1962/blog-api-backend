@@ -26,6 +26,23 @@ mock.module("../src/db/prisma.js", {
   },
 });
 
+mock.module("../src/services/supabase.js", {
+  exports: {
+    supabase: {
+      storage: {
+        from: mock.fn(() => {
+          return {
+            upload: mock.fn(() => {
+              return { data: { path: "path" }, error: null };
+            }),
+          };
+        }),
+      },
+    },
+  },
+});
+
+const { supabase } = await import("../src/services/supabase.js");
 const { default: prisma } = await import("../src/db/prisma.js");
 const { default: app } = await import("../app.js");
 
@@ -52,5 +69,7 @@ describe("profile", () => {
       });
 
     assert.strictEqual(response.statusCode, 200);
+    assert.strictEqual(supabase.storage.from.mock.calls.length, 1);
+    assert.strictEqual(prisma.Post.create.mock.calls.length, 1);
   });
 });

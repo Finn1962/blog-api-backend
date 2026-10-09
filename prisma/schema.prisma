@@ -30,18 +30,19 @@ model User {
 
 model Post {
   id        Int      @id @default(autoincrement())
-  title     String
+  title     String?
   content   String?
   author    User     @relation(fields: [author_id], references: [id])
   author_id  Int
   status    Status    @default(DRAFT)
   created_at DateTime @default(now())
   comments  Comment[]
+  image_path String? 
 }
 
 model Comment {
   id        Int      @id @default(autoincrement())
-  title     String
+  title     String?
   content   String?
   blog      Post     @relation(fields: [post_id], references: [id])
   post_id    Int

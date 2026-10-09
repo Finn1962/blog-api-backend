@@ -7,13 +7,15 @@ const supabase = createClient(
 );
 
 async function checkConnection() {
-  const { data, error } = await supabase.storage.listBuckets();
+  const { error } = await supabase.storage.listBuckets();
 
   if (error) {
-    console.error("❌ Connection failed:", error.message);
+    console.error("❌ Supabase connection failed:", error.message);
   } else {
-    console.log("✅ Connection successful! Buckets found:", data);
+    console.log("✅ Supabase connection successful!");
   }
 }
 
 checkConnection();
+
+export { supabase };
