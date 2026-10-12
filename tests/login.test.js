@@ -1,18 +1,25 @@
 import { test, mock, describe } from "node:test";
 import assert from "node:assert";
 import request from "supertest";
+import crypto from "crypto";
+
+process.env.NODE_ENV = "test";
+
+const refreshToken = crypto.randomBytes(32).toString("hex");
 
 mock.module("../src/db/prisma.js", {
   exports: {
     default: {
       User: {
-        findUnique: mock.fn(async () => {
-          return {
-            email: "test@example.com",
-            password_hash: "some-random-hash",
-            id: 1,
-          };
-        }),
+        findUnique: mock.fn(async () => ({
+          email: "test@example.com",
+          password_hash: "some-random-hash",
+          id: 1,
+        })),
+      },
+      Refresh_Token: {
+        create: mock.fn(),
+        findUnique: mock.fn(async () => ({})),
       },
     },
   },
@@ -21,9 +28,7 @@ mock.module("../src/db/prisma.js", {
 mock.module("bcrypt", {
   exports: {
     default: {
-      compare: mock.fn(async () => {
-        return true;
-      }),
+      compare: mock.fn(async () => true),
     },
   },
 });
@@ -42,5 +47,24 @@ describe("login", () => {
       { where: { email: "test@example.com" } },
     ]);
     assert.strictEqual(response.text, '{"message":"Login successful"}');
+  });
+
+  test("should refresh login", async () => {
+    const response = await request(app)
+      .get("/login/refresh")
+      .set("Cookie", `refreshToken=${refreshToken}`);
+
+    assert.strictEqual(response.statusCode, 200);
+
+    assert.deepStrictEqual(
+      prisma.Refresh_Token.findUnique.mock.calls[0].arguments,
+      [
+        {
+          where: {
+            token: refreshToken,
+          },
+        },
+      ],
+    );
   });
 });

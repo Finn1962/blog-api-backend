@@ -25,6 +25,8 @@ postRouter.get(
       }
     });
 
+    console.log(1);
+
     res.json({
       blogs,
     });
@@ -97,11 +99,13 @@ postRouter.post(
       data: {
         title,
         content,
-        author_id: jwt.decode(req.cookies.jwt).id,
+        author_id: jwt.decode(req.cookies.accessToken).id,
         status,
         image_path: data ? data.path : null,
       },
     });
+
+    console.log(2);
 
     res.json({
       message: "Post created successfully",

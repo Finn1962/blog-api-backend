@@ -35,7 +35,7 @@ passport.use(
 const jwtOptions = {
   jwtFromRequest: ExtractJwt.fromExtractors([
     (req) => {
-      return req?.cookies?.jwt || null;
+      return req?.cookies?.accessToken || null;
     },
   ]),
   secretOrKey: process.env.JWT_SECRET_KEY,

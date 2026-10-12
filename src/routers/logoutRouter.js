@@ -3,9 +3,11 @@ import express from "express";
 
 const logoutRouter = express.Router();
 
-logoutRouter.get("/", (req, res) => {
-  res.clearCookie("jwt");
-  res.json({ message: "Logout successful" });
+logoutRouter.get("/", async (req, res) => {
+  res
+    .clearCookie("accessToken")
+    .clearCookie("refreshToken")
+    .json({ message: "Logout successful" });
 });
 
 export default logoutRouter;

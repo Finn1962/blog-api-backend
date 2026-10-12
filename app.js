@@ -20,6 +20,8 @@ import registerRouter from "./src/routers/registerRouter.js";
 
 import { errorHandeling } from "./src/middleware/errorHandeling.js";
 
+import { refreshTokenCleanup } from "./src/utils/refreshTokenCleanup.js";
+
 const app = express();
 
 app.use(
@@ -36,6 +38,8 @@ app.use(express.json());
 
 app.use(cookieParser());
 
+if (process.env.NODE_ENV === "test") refreshTokenCleanup();
+
 app.use(passport.initialize());
 
 app.use("/register", registerRouter);
@@ -44,12 +48,7 @@ app.use("/login", loginRouter);
 
 app.use("/logout", logoutRouter);
 
-app.use(
-  "/post",
-
-  passport.authenticate("jwt", { session: false }),
-  postRouter,
-);
+app.use("/post", passport.authenticate("jwt", { session: false }), postRouter);
 
 app.use(errorHandeling);
 

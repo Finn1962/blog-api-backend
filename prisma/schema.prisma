@@ -19,19 +19,20 @@ enum Status {
 
 model User {
   id                 Int      @id @default(autoincrement())
-  email              String?  @unique
-  password_hash      String?
-  username           String?   @unique
+  email              String  @unique
+  password_hash      String
+  username           String   @unique
   created_at         DateTime @default(now())
   role               Role   @default(USER)
   blogs              Post[]
   comments           Comment[]
+  refresh_token      Refresh_Token?
 }
 
 model Post {
   id        Int      @id @default(autoincrement())
-  title     String?
-  content   String?
+  title     String
+  content   String
   author    User     @relation(fields: [author_id], references: [id])
   author_id  Int
   status    Status    @default(DRAFT)
@@ -42,11 +43,19 @@ model Post {
 
 model Comment {
   id        Int      @id @default(autoincrement())
-  title     String?
-  content   String?
+  title     String
+  content   String
   blog      Post     @relation(fields: [post_id], references: [id])
   post_id    Int
   author    User     @relation(fields: [author_id], references: [id])
   author_id  Int
+  created_at DateTime @default(now())
+}
+
+model Refresh_Token {
+  id         Int      @id @default(autoincrement())
+  token      String
+  user       User      @relation(fields: [user_id], references: [id])
+  user_id    Int       @unique
   created_at DateTime @default(now())
 }

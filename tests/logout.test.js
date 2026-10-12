@@ -6,6 +6,8 @@ import request from "supertest";
 
 import app from "../app.js";
 
+process.env.NODE_ENV = "test";
+
 describe("logout", () => {
   test("should logout user", async () => {
     const response = await request(app).get("/logout");

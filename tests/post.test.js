@@ -4,9 +4,11 @@ import assert from "node:assert";
 import request from "supertest";
 import jwt from "jsonwebtoken";
 
+process.env.NODE_ENV = "test";
+
 const payload = { id: 1, username: "test-user" };
 
-const token = jwt.sign(payload, process.env.JWT_SECRET_KEY, {
+const accessToken = jwt.sign(payload, process.env.JWT_SECRET_KEY, {
   expiresIn: "1h",
 });
 
@@ -50,7 +52,7 @@ describe("profile", () => {
   test("should get all posts", async () => {
     const response = await request(app)
       .get("/post")
-      .set("Cookie", `jwt=${token}`);
+      .set("Cookie", `accessToken=${accessToken}`);
 
     assert.strictEqual(response.statusCode, 200);
     assert.strictEqual(prisma.Post.findMany.mock.calls.length, 1);
@@ -59,7 +61,7 @@ describe("profile", () => {
   test("should should create a new posts", async () => {
     const response = await request(app)
       .post("/post/new")
-      .set("Cookie", `jwt=${token}`)
+      .set("Cookie", `accessToken=${accessToken}`)
       .field("title", "test-title")
       .field("content", "some-test-content")
       .field("status", "draft")
