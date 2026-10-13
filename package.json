@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "test": "node --experimental-test-module-mocks --test",
+    "test": "NODE_ENV=test node --experimental-test-module-mocks --test",
     "start": "node --watch server.js"
   },
   "dependencies": {

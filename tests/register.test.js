@@ -1,8 +1,7 @@
+import "dotenv/config";
 import { test, mock, describe } from "node:test";
 import assert from "node:assert";
 import request from "supertest";
-
-process.env.NODE_ENV = "test";
 
 mock.module("../src/db/prisma.js", {
   exports: {

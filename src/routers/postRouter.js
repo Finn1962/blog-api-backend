@@ -25,8 +25,6 @@ postRouter.get(
       }
     });
 
-    console.log(1);
-
     res.json({
       blogs,
     });
@@ -104,8 +102,6 @@ postRouter.post(
         image_path: data ? data.path : null,
       },
     });
-
-    console.log(2);
 
     res.json({
       message: "Post created successfully",

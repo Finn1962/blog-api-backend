@@ -4,8 +4,6 @@ import assert from "node:assert";
 import request from "supertest";
 import jwt from "jsonwebtoken";
 
-process.env.NODE_ENV = "test";
-
 const payload = { id: 1, username: "test-user" };
 
 const accessToken = jwt.sign(payload, process.env.JWT_SECRET_KEY, {

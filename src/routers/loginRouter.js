@@ -55,6 +55,8 @@ loginRouter.post("/", (req, res, next) => {
 });
 
 loginRouter.get("/refresh", async (req, res) => {
+  console.log("cookies: ", req?.cookies);
+
   const tokenCookie = req?.cookies?.refreshToken;
 
   if (!tokenCookie) return res.status(401).json({ message: "Refresh denied" });
