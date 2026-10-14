@@ -7,20 +7,77 @@ import sanitizeHtml from "sanitize-html";
 import { supabase } from "../services/supabase.js";
 import { validateInputs } from "../middleware/inputValidation.js";
 import { validateImage } from "../middleware/imageValidation.js";
+import {
+  uploadImageToSupabase,
+  deleteImageFromSupabase,
+  updateImageFromSupabase,
+} from "../utils/supabase.js";
 
 const postRouter = express.Router();
+
+const postValidation = [
+  body("title").notEmpty().trim().withMessage("Title cannot be empty"),
+  body("status").notEmpty().trim().toUpperCase(),
+  body("tags")
+    .optional()
+    .trim()
+    .customSanitizer((value) => {
+      if (value === "") return;
+      const splitedValue = value
+        .split(",")
+        .map((item) => ({ content: item.trim() }));
+      return splitedValue;
+    }),
+  body("content")
+    .custom((value) => {
+      if (!value) throw new Error("Content cannot be empty");
+      const noTags = value.replace(/<\/?[^>]+(>|$)/g, "");
+      if (noTags.trim().length === 0) {
+        throw new Error("Content cannot be empty");
+      }
+      return true;
+    })
+    .customSanitizer((value) => {
+      const sanitizeOptions = {
+        // prettier-ignore
+        allowedTags: [
+            "b", "i", "em", "strong", "a", "p", "br" ,"ul", "ol", 
+            "li", "h1", "h2", "h3", "blockquote","pre", "code", "span",
+          ],
+        allowedAttributes: {
+          a: ["href", "name", "target"],
+          p: ["class"],
+          span: ["class"],
+          li: ["class"],
+          ul: ["class"],
+          ol: ["class"],
+        },
+        allowedClasses: {
+          "*": [
+            "ql-align-center",
+            "ql-align-right",
+            "ql-align-justify",
+            "ql-indent-*",
+          ],
+        },
+        allowedIframeHostnames: [],
+      };
+
+      return sanitizeHtml(value, sanitizeOptions);
+    }),
+];
 
 postRouter.get(
   "/",
 
   async (req, res) => {
-    const blogs = await prisma.Post.findMany({
+    const posts = await prisma.Post.findMany({
       include: {
         tags: true,
       },
     });
 
-    blogs.forEach((blog) => {
+    posts.forEach((blog) => {
       if (blog.image_path) {
         const { data } = supabase.storage
           .from("images")
@@ -30,7 +87,36 @@ postRouter.get(
     });
 
     res.json({
-      blogs,
+      posts,
+    });
+  },
+);
+
+postRouter.get(
+  "/:id",
+
+  [param("id").notEmpty().isInt().toInt()],
+
+  validateInputs,
+
+  async (req, res) => {
+    const { id } = matchedData(req);
+
+    const post = await prisma.Post.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (post.image_path) {
+      const { data } = supabase.storage
+        .from("images")
+        .getPublicUrl(post.image_path);
+      post.image_url = data.publicUrl;
+    }
+
+    res.json({
+      post,
     });
   },
 );
@@ -38,55 +124,7 @@ postRouter.get(
 postRouter.post(
   "/",
 
-  [
-    body("title").notEmpty().trim().withMessage("Title cannot be empty"),
-    body("status").notEmpty().trim().toUpperCase(),
-    body("tags")
-      .optional()
-      .customSanitizer((value) => {
-        const splitedValue = value
-          .split(",")
-          .map((item) => ({ content: item.trim() }));
-        return splitedValue;
-      }),
-    body("content")
-      .custom((value) => {
-        if (!value) throw new Error("Content cannot be empty");
-        const noTags = value.replace(/<\/?[^>]+(>|$)/g, "");
-        if (noTags.trim().length === 0) {
-          throw new Error("Content cannot be empty");
-        }
-        return true;
-      })
-      .customSanitizer((value) => {
-        const sanitizeOptions = {
-          // prettier-ignore
-          allowedTags: [
-            "b", "i", "em", "strong", "a", "p", "br" ,"ul", "ol", 
-            "li", "h1", "h2", "h3", "blockquote","pre","code","span",
-          ],
-          allowedAttributes: {
-            a: ["href", "name", "target"],
-            p: ["class"],
-            span: ["class"],
-            li: ["class"],
-            ul: ["class"],
-            ol: ["class"],
-          },
-          allowedClasses: {
-            "*": [
-              "ql-align-center",
-              "ql-align-right",
-              "ql-align-justify",
-              "ql-indent-*",
-            ],
-          },
-          allowedIframeHostnames: [],
-        };
-
-        return sanitizeHtml(value, sanitizeOptions);
-      }),
-  ],
+  [...postValidation],
 
   validateInputs,
   validateImage,
@@ -94,16 +132,8 @@ postRouter.post(
   async (req, res, next) => {
     const { title, content, status, tags } = matchedData(req);
 
-    const { data, error } = req.image
-      ? await supabase.storage
-          .from("images")
-          .upload(req.image.originalname, req.image.buffer, {
-            contentType: req.image.mimetype,
-            upsert: false,
-          })
-      : { data: null, error: null };
-
-    if (error) return next(error);
+    const uploadedImage = await uploadImageToSupabase(req.image);
+    if (uploadedImage.error) return next(uploadedImage.error);
 
     await prisma.Post.create({
       data: {
@@ -111,7 +141,7 @@ postRouter.post(
         content,
         author_id: jwt.decode(req.cookies.accessToken).id,
         status,
-        image_path: data ? data.path : null,
+        image_path: uploadedImage.data ? uploadedImage.data.path : null,
         tags: {
           create: tags,
         },
@@ -131,12 +161,54 @@ postRouter.delete(
 
   validateInputs,
 
-  async (req, res) => {
+  async (req, res, next) => {
     const { id } = matchedData(req);
+
+    const deletedImage = await deleteImageFromSupabase(id);
+    if (deletedImage.error) return next(deletedImage.error);
 
     await prisma.Post.delete({ where: { id } });
 
     res.json({ message: "Post deleted successfully" });
+  },
+);
+
+postRouter.put(
+  "/",
+
+  [...postValidation, body("id").notEmpty().isInt().toInt()],
+
+  validateInputs,
+  validateImage,
+
+  async (req, res, next) => {
+    const { title, content, status, tags, id } = matchedData(req);
+
+    const updatedImage = await updateImageFromSupabase(req.image);
+    if (updatedImage.error) return next(updatedImage.error);
+
+    const deletedImage = !req.image && (await deleteImageFromSupabase(id));
+    if (deletedImage.error) return next(deletedImage.error);
+
+    await prisma.Post.update({
+      where: {
+        id,
+      },
+      data: {
+        title,
+        content,
+        author_id: jwt.decode(req.cookies.accessToken).id,
+        status,
+        image_path: updatedImage.data ? updatedImage.data.path : null,
+        tags: {
+          create: tags,
+        },
+      },
+    });
+
+    res.json({
+      message: "Post created successfully",
+    });
   },
 );
 

@@ -17,10 +17,14 @@ mock.module("../src/db/prisma.js", {
   exports: {
     default: {
       Post: {
+        findUnique: mock.fn(async () => {
+          return {};
+        }),
         findMany: mock.fn(async () => {
           return [];
         }),
         create: mock.fn(),
+        update: mock.fn(),
         delete: mock.fn(),
       },
     },
@@ -35,6 +39,12 @@ mock.module("../src/services/supabase.js", {
           return {
             upload: mock.fn(() => {
               return { data: { path: "path" }, error: null };
+            }),
+            update: mock.fn(() => {
+              return { data: { path: "path" }, error: null };
+            }),
+            remove: mock.fn(() => {
+              return { error: null };
             }),
           };
         }),
@@ -55,6 +65,15 @@ describe("profile", () => {
 
     assert.strictEqual(response.statusCode, 200);
     assert.strictEqual(prisma.Post.findMany.mock.calls.length, 1);
+  });
+
+  test("should get unique post", async () => {
+    const response = await request(app)
+      .get("/post/2")
+      .set("Cookie", `accessToken=${accessToken}`);
+
+    assert.strictEqual(response.statusCode, 200);
+    assert.strictEqual(prisma.Post.findUnique.mock.calls.length, 1);
   });
 
   test("should create a new posts", async () => {
@@ -84,5 +103,23 @@ describe("profile", () => {
     assert.deepStrictEqual(prisma.Post.delete.mock.calls[0].arguments, [
       { where: { id: 2 } },
     ]);
+  });
+
+  test("should update a post", async () => {
+    const response = await request(app)
+      .put("/post")
+      .set("Cookie", `accessToken=${accessToken}`)
+      .field("title", "test-title")
+      .field("id", 2)
+      .field("content", "some-test-content")
+      .field("status", "draft")
+      .field("tags", "tag1, tag2 ,tag3")
+      .attach("image", dummyImageBuffer, {
+        filename: fileName,
+        contentType: "image/jpeg",
+      });
+
+    assert.strictEqual(response.statusCode, 200);
+    assert.strictEqual(prisma.Post.update.mock.calls.length, 1);
   });
 });
