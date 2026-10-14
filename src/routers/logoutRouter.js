@@ -4,7 +4,6 @@ import express from "express";
 const logoutRouter = express.Router();
 
 logoutRouter.get("/", (req, res) => {
-  console.log("augelöst");
   res
     .clearCookie("accessToken")
     .clearCookie("refreshToken")

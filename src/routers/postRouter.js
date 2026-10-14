@@ -2,7 +2,7 @@ import "dotenv/config";
 import express from "express";
 import jwt from "jsonwebtoken";
 import prisma from "../db/prisma.js";
-import { body, matchedData } from "express-validator";
+import { body, param, matchedData } from "express-validator";
 import sanitizeHtml from "sanitize-html";
 import { supabase } from "../services/supabase.js";
 import { validateInputs } from "../middleware/inputValidation.js";
@@ -14,7 +14,11 @@ postRouter.get(
   "/",
 
   async (req, res) => {
-    const blogs = await prisma.Post.findMany();
+    const blogs = await prisma.Post.findMany({
+      include: {
+        tags: true,
+      },
+    });
 
     blogs.forEach((blog) => {
       if (blog.image_path) {
@@ -32,11 +36,19 @@ postRouter.get(
 );
 
 postRouter.post(
-  "/new",
+  "/",
 
   [
     body("title").notEmpty().trim().withMessage("Title cannot be empty"),
     body("status").notEmpty().trim().toUpperCase(),
+    body("tags")
+      .optional()
+      .customSanitizer((value) => {
+        const splitedValue = value
+          .split(",")
+          .map((item) => ({ content: item.trim() }));
+        return splitedValue;
+      }),
     body("content")
       .custom((value) => {
         if (!value) throw new Error("Content cannot be empty");
@@ -80,7 +92,7 @@ postRouter.post(
   validateImage,
 
   async (req, res, next) => {
-    const { title, content, status } = matchedData(req);
+    const { title, content, status, tags } = matchedData(req);
 
     const { data, error } = req.image
       ? await supabase.storage
@@ -100,12 +112,31 @@ postRouter.post(
         author_id: jwt.decode(req.cookies.accessToken).id,
         status,
         image_path: data ? data.path : null,
+        tags: {
+          create: tags,
+        },
       },
     });
 
     res.json({
       message: "Post created successfully",
     });
+  },
+);
+
+postRouter.delete(
+  "/:id",
+
+  [param("id").isInt().toInt()],
+
+  validateInputs,
+
+  async (req, res) => {
+    const { id } = matchedData(req);
+
+    await prisma.Post.delete({ where: { id } });
+
+    res.json({ message: "Post deleted successfully" });
   },
 );
 

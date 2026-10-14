@@ -21,6 +21,7 @@ mock.module("../src/db/prisma.js", {
           return [];
         }),
         create: mock.fn(),
+        delete: mock.fn(),
       },
     },
   },
@@ -56,13 +57,14 @@ describe("profile", () => {
     assert.strictEqual(prisma.Post.findMany.mock.calls.length, 1);
   });
 
-  test("should should create a new posts", async () => {
+  test("should create a new posts", async () => {
     const response = await request(app)
-      .post("/post/new")
+      .post("/post")
       .set("Cookie", `accessToken=${accessToken}`)
       .field("title", "test-title")
       .field("content", "some-test-content")
       .field("status", "draft")
+      .field("tags", "tag1, tag2 ,tag3")
       .attach("image", dummyImageBuffer, {
         filename: fileName,
         contentType: "image/jpeg",
@@ -71,5 +73,16 @@ describe("profile", () => {
     assert.strictEqual(response.statusCode, 200);
     assert.strictEqual(supabase.storage.from.mock.calls.length, 1);
     assert.strictEqual(prisma.Post.create.mock.calls.length, 1);
+  });
+
+  test("should delete a post", async () => {
+    const response = await request(app)
+      .delete("/post/2")
+      .set("Cookie", `accessToken=${accessToken}`);
+
+    assert.strictEqual(response.statusCode, 200);
+    assert.deepStrictEqual(prisma.Post.delete.mock.calls[0].arguments, [
+      { where: { id: 2 } },
+    ]);
   });
 });
