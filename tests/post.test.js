@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { test, mock, describe } from "node:test";
+import { test, mock, describe, beforeEach } from "node:test";
 import assert from "node:assert";
 import request from "supertest";
 import jwt from "jsonwebtoken";
@@ -40,9 +40,6 @@ mock.module("../src/services/supabase.js", {
             upload: mock.fn(() => {
               return { data: { path: "path" }, error: null };
             }),
-            update: mock.fn(() => {
-              return { data: { path: "path" }, error: null };
-            }),
             remove: mock.fn(() => {
               return { error: null };
             }),
@@ -56,6 +53,16 @@ mock.module("../src/services/supabase.js", {
 const { supabase } = await import("../src/services/supabase.js");
 const { default: prisma } = await import("../src/db/prisma.js");
 const { default: app } = await import("../app.js");
+
+beforeEach(() => {
+  prisma.Post.findMany.mock.resetCalls();
+  prisma.Post.findUnique.mock.resetCalls();
+  prisma.Post.create.mock.resetCalls();
+  prisma.Post.update.mock.resetCalls();
+  prisma.Post.delete.mock.resetCalls();
+
+  supabase.storage.from.mock.resetCalls();
+});
 
 describe("profile", () => {
   test("should get all posts", async () => {
@@ -74,6 +81,15 @@ describe("profile", () => {
 
     assert.strictEqual(response.statusCode, 200);
     assert.strictEqual(prisma.Post.findUnique.mock.calls.length, 1);
+  });
+
+  test("should filter and return posts", async () => {
+    const response = await request(app)
+      .get("/post/search?searchValue=test&status=all")
+      .set("Cookie", `accessToken=${accessToken}`);
+
+    assert.strictEqual(response.statusCode, 200);
+    assert.strictEqual(prisma.Post.findMany.mock.calls.length, 1);
   });
 
   test("should create a new posts", async () => {

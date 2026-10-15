@@ -13,13 +13,22 @@ async function uploadImageToSupabase(imageFile) {
     : { error: null, data: null };
 }
 
-async function updateImageFromSupabase(imageFile) {
+async function updateImageInSupabase(imageFile, postId) {
+  const post = await prisma.Post.findUnique({
+    where: { id: postId },
+  });
+
+  const deletedImage = post.image_path
+    ? await supabase.storage.from("images").remove([post.image_path])
+    : { error: null, data: null };
+  if (deletedImage.error) return deletedImage;
+
   return imageFile
     ? await supabase.storage
         .from("images")
-        .update(imageFile.originalname, imageFile.buffer, {
+        .upload(imageFile.originalname, imageFile.buffer, {
           contentType: imageFile.mimetype,
-          upsert: true,
+          upsert: false,
           cacheControl: "no-cache",
         })
     : { error: null, data: null };
@@ -35,8 +44,18 @@ async function deleteImageFromSupabase(postId) {
     : { error: null, data: null };
 }
 
+function getImageURL(post) {
+  if (post.image_path) {
+    const { data } = supabase.storage
+      .from("images")
+      .getPublicUrl(post.image_path);
+    post.image_url = data.publicUrl;
+  }
+}
+
 export {
   uploadImageToSupabase,
-  updateImageFromSupabase,
+  updateImageInSupabase,
   deleteImageFromSupabase,
+  getImageURL,
 };

@@ -2,15 +2,15 @@ import "dotenv/config";
 import express from "express";
 import jwt from "jsonwebtoken";
 import prisma from "../db/prisma.js";
-import { body, param, matchedData } from "express-validator";
+import { body, param, matchedData, query } from "express-validator";
 import sanitizeHtml from "sanitize-html";
-import { supabase } from "../services/supabase.js";
 import { validateInputs } from "../middleware/inputValidation.js";
 import { validateImage } from "../middleware/imageValidation.js";
 import {
   uploadImageToSupabase,
   deleteImageFromSupabase,
-  updateImageFromSupabase,
+  updateImageInSupabase,
+  getImageURL,
 } from "../utils/supabase.js";
 
 const postRouter = express.Router();
@@ -20,12 +20,13 @@ const postValidation = [
   body("status").notEmpty().trim().toUpperCase(),
   body("tags")
     .optional()
-    .trim()
     .customSanitizer((value) => {
       if (value === "") return;
       const splitedValue = value
         .split(",")
         .map((item) => ({ content: item.trim() }));
+      if (splitedValue[splitedValue.length - 1].content === "")
+        splitedValue.pop();
       return splitedValue;
     }),
   body("content")
@@ -77,13 +78,54 @@ postRouter.get(
       },
     });
 
-    posts.forEach((blog) => {
-      if (blog.image_path) {
-        const { data } = supabase.storage
-          .from("images")
-          .getPublicUrl(blog.image_path);
-        blog.image_url = data.publicUrl;
-      }
+    posts.forEach((post) => {
+      getImageURL(post);
+    });
+
+    res.json({
+      posts,
+    });
+  },
+);
+
+postRouter.get(
+  "/search",
+
+  [
+    query("searchValue").optional().trim(),
+    query("status").optional().trim().toUpperCase(),
+  ],
+
+  validateInputs,
+
+  async (req, res) => {
+    const { searchValue, status } = matchedData(req);
+
+    const posts = await prisma.Post.findMany({
+      where: {
+        AND: [
+          {
+            OR: [
+              { title: { contains: searchValue } },
+              {
+                tags: {
+                  some: {
+                    content: { contains: searchValue },
+                  },
+                },
+              },
+            ],
+          },
+          { status: status === "ALL" ? { in: ["PUBLIC", "DRAFT"] } : status },
+        ],
+      },
+      include: {
+        tags: true,
+      },
+    });
+
+    posts.forEach((post) => {
+      getImageURL(post);
     });
 
     res.json({
@@ -106,14 +148,12 @@ postRouter.get(
       where: {
         id,
       },
+      include: {
+        tags: true,
+      },
     });
 
-    if (post.image_path) {
-      const { data } = supabase.storage
-        .from("images")
-        .getPublicUrl(post.image_path);
-      post.image_url = data.publicUrl;
-    }
+    getImageURL(post);
 
     res.json({
       post,
@@ -184,31 +224,33 @@ postRouter.put(
   async (req, res, next) => {
     const { title, content, status, tags, id } = matchedData(req);
 
-    const updatedImage = await updateImageFromSupabase(req.image);
+    const updatedImage = await updateImageInSupabase(req.image, id);
     if (updatedImage.error) return next(updatedImage.error);
 
     const deletedImage = !req.image && (await deleteImageFromSupabase(id));
     if (deletedImage.error) return next(deletedImage.error);
 
+    const updateData = {
+      title,
+      content,
+      author_id: jwt.decode(req.cookies.accessToken).id,
+      status,
+      image_path: updatedImage.data ? updatedImage.data.path : null,
+    };
+
+    if (tags) {
+      updateData.tags = {
+        deleteMany: {},
+        create: tags,
+      };
+    }
+
     await prisma.Post.update({
-      where: {
-        id,
-      },
-      data: {
-        title,
-        content,
-        author_id: jwt.decode(req.cookies.accessToken).id,
-        status,
-        image_path: updatedImage.data ? updatedImage.data.path : null,
-        tags: {
-          create: tags,
-        },
-      },
+      where: { id },
+      data: updateData,
     });
 
-    res.json({
-      message: "Post created successfully",
-    });
+    res.json({ message: "Post updated successfully" });
   },
 );
 

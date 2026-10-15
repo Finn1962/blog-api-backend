@@ -6,15 +6,13 @@ function refreshTokenCleanup() {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-    const ergebnis = await prisma.post.deleteMany({
+    await prisma.post.deleteMany({
       where: {
         created_at: {
           lte: oneWeekAgo, // kleiner oder gleich vor einer Woche
         },
       },
     });
-
-    console.log(`${ergebnis.count} alte Elemente wurden erfolgreich gelöscht.`);
   });
 }
 
