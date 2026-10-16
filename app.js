@@ -10,6 +10,7 @@ import postRouter from "./src/routers/postRouter.js";
 import registerRouter from "./src/routers/registerRouter.js";
 import { errorHandeling } from "./src/middleware/errorHandeling.js";
 import { refreshTokenCleanup } from "./src/utils/refreshTokenCleanup.js";
+import profileRouter from "./src/routers/profileRouter.js";
 
 const app = express();
 
@@ -38,6 +39,12 @@ app.use("/login", loginRouter);
 app.use("/logout", logoutRouter);
 
 app.use("/post", passport.authenticate("jwt", { session: false }), postRouter);
+
+app.use(
+  "/profile",
+  passport.authenticate("jwt", { session: false }),
+  profileRouter,
+);
 
 app.use(errorHandeling);
 

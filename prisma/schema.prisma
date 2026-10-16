@@ -10,6 +10,7 @@ datasource db {
 enum Role {
   USER
   AUTHOR
+  ADMIN
 }
 
 enum Status {
@@ -18,15 +19,17 @@ enum Status {
 }
 
 model User {
-  id                 Int             @id @default(autoincrement())
-  email              String          @unique
-  password_hash      String
-  username           String         @unique
-  created_at         DateTime       @default(now())
-  role               Role           @default(USER)
-  blogs              Post[]
-  comments           Comment[]
-  refresh_token      Refresh_Token?
+  id                  Int             @id @default(autoincrement())
+  email               String          @unique
+  password_hash       String
+  username            String         @unique
+  created_at          DateTime       @default(now())
+  role                Role           @default(USER)
+  profile_image_path  String?        
+  email_notifications Boolean        @default(false)
+  blogs               Post[]
+  comments            Comment[]
+  refresh_token       Refresh_Token?
 }
 
 model Post {

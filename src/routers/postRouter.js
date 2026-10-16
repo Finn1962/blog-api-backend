@@ -16,8 +16,8 @@ import {
 const postRouter = express.Router();
 
 const postValidation = [
-  body("title").notEmpty().trim().withMessage("Title cannot be empty"),
-  body("status").notEmpty().trim().toUpperCase(),
+  body("title").trim().notEmpty().withMessage("Title cannot be empty"),
+  body("status").trim().notEmpty().toUpperCase(),
   body("tags")
     .optional()
     .customSanitizer((value) => {
@@ -76,10 +76,16 @@ postRouter.get(
       include: {
         tags: true,
       },
+      orderBy: {
+        id: "asc",
+      },
     });
 
     posts.forEach((post) => {
-      getImageURL(post);
+      if (post.image_path) {
+        const { data } = getImageURL(post.image_path);
+        post.image_url = data.publicUrl;
+      }
     });
 
     res.json({
@@ -106,11 +112,11 @@ postRouter.get(
         AND: [
           {
             OR: [
-              { title: { contains: searchValue } },
+              { title: { contains: searchValue, mode: "insensitive" } },
               {
                 tags: {
                   some: {
-                    content: { contains: searchValue },
+                    content: { contains: searchValue, mode: "insensitive" },
                   },
                 },
               },
@@ -122,10 +128,16 @@ postRouter.get(
       include: {
         tags: true,
       },
+      orderBy: {
+        id: "asc",
+      },
     });
 
     posts.forEach((post) => {
-      getImageURL(post);
+      if (post.image_path) {
+        const { data } = getImageURL(post.image_path);
+        post.image_url = data.publicUrl;
+      }
     });
 
     res.json({
@@ -153,7 +165,10 @@ postRouter.get(
       },
     });
 
-    getImageURL(post);
+    if (post.image_path) {
+      const { data } = getImageURL(post.image_path);
+      post.image_url = data.publicUrl;
+    }
 
     res.json({
       post,
@@ -204,7 +219,10 @@ postRouter.delete(
   async (req, res, next) => {
     const { id } = matchedData(req);
 
-    const deletedImage = await deleteImageFromSupabase(id);
+    const post = await prisma.Post.findUnique({
+      where: { id },
+    });
+    const deletedImage = await deleteImageFromSupabase(post.image_path);
     if (deletedImage.error) return next(deletedImage.error);
 
     await prisma.Post.delete({ where: { id } });
@@ -224,10 +242,17 @@ postRouter.put(
   async (req, res, next) => {
     const { title, content, status, tags, id } = matchedData(req);
 
-    const updatedImage = await updateImageInSupabase(req.image, id);
+    const post = await prisma.Post.findUnique({
+      where: { id },
+    });
+    const updatedImage = await updateImageInSupabase(
+      post.image_path,
+      req.image,
+    );
     if (updatedImage.error) return next(updatedImage.error);
 
-    const deletedImage = !req.image && (await deleteImageFromSupabase(id));
+    const deletedImage =
+      !req.image && (await deleteImageFromSupabase(post.image_path));
     if (deletedImage.error) return next(deletedImage.error);
 
     const updateData = {

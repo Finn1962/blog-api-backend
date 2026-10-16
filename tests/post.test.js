@@ -60,7 +60,6 @@ beforeEach(() => {
   prisma.Post.create.mock.resetCalls();
   prisma.Post.update.mock.resetCalls();
   prisma.Post.delete.mock.resetCalls();
-
   supabase.storage.from.mock.resetCalls();
 });
 

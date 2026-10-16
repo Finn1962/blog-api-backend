@@ -1,5 +1,4 @@
 import { supabase } from "../services/supabase.js";
-import prisma from "../db/prisma.js";
 
 async function uploadImageToSupabase(imageFile) {
   return imageFile
@@ -13,13 +12,9 @@ async function uploadImageToSupabase(imageFile) {
     : { error: null, data: null };
 }
 
-async function updateImageInSupabase(imageFile, postId) {
-  const post = await prisma.Post.findUnique({
-    where: { id: postId },
-  });
-
-  const deletedImage = post.image_path
-    ? await supabase.storage.from("images").remove([post.image_path])
+async function updateImageInSupabase(imagePath, imageFile) {
+  const deletedImage = imagePath
+    ? await supabase.storage.from("images").remove([imagePath])
     : { error: null, data: null };
   if (deletedImage.error) return deletedImage;
 
@@ -34,23 +29,16 @@ async function updateImageInSupabase(imageFile, postId) {
     : { error: null, data: null };
 }
 
-async function deleteImageFromSupabase(postId) {
-  const post = await prisma.Post.findUnique({
-    where: { id: postId },
-  });
-
-  return post.image_path
-    ? await supabase.storage.from("images").remove([post.image_path])
+async function deleteImageFromSupabase(imagePath) {
+  return imagePath
+    ? await supabase.storage.from("images").remove([imagePath])
     : { error: null, data: null };
 }
 
-function getImageURL(post) {
-  if (post.image_path) {
-    const { data } = supabase.storage
-      .from("images")
-      .getPublicUrl(post.image_path);
-    post.image_url = data.publicUrl;
-  }
+function getImageURL(image_path) {
+  return image_path
+    ? supabase.storage.from("images").getPublicUrl(image_path)
+    : { data: { publicUrl: null }, error: null };
 }
 
 export {
