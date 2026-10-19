@@ -23,7 +23,7 @@ profileRouter.get(
       },
     });
 
-    res.json(userData);
+    res.json({ userData });
   },
 );
 
@@ -32,21 +32,31 @@ profileRouter.put(
 
   [
     body("username").trim().notEmpty().withMessage("Username is required"),
-    body("password")
+    body("currentPassword")
       .optional()
-      .isLength({ min: 8, max: 32 })
-      .withMessage("Password must be between 8 and 32 characters"),
-    body("confirmPassword")
+      .custom((value, { req }) => {
+        if (req.body.newPassword && value === "") {
+          throw new Error("Current passwords is required");
+        }
+        return true;
+      }),
+    body("newPassword")
       .optional()
-      .isLength({ min: 8, max: 32 })
-      .withMessage("Confirm Password must be between 8 and 32 characters"),
-    body("confirmPassword").custom((value, { req }) => {
-      if (value !== req.body.password) {
-        throw new Error("Passwords must match");
-      }
-      return true;
-    }),
-    body("email_notifications").notEmpty().isBoolean().toBoolean(),
+      .custom((value) => {
+        if (value !== "" && (value.length < 8 || value.length > 32)) {
+          throw new Error("New password must be between 8 and 32 characters");
+        }
+        return true;
+      }),
+    body("confirmNewPassword")
+      .optional()
+      .custom((value, { req }) => {
+        if (value !== req.body.newPassword) {
+          throw new Error("New passwords must match");
+        }
+        return true;
+      }),
+    body("emailNotifications").toBoolean(),
   ],
 
   validateInputs,
@@ -54,6 +64,8 @@ profileRouter.put(
 
   async (req, res, next) => {
     const { username, password, email_notifications } = matchedData(req);
+
+    console.log("augelöst");
 
     const user = await prisma.User.findUnique({
       where: { id: jwt.decode(req.cookies.accessToken).id },
@@ -74,7 +86,7 @@ profileRouter.put(
       },
     });
 
-    res.json();
+    res.json({ message: "User data successfully changed" });
   },
 );
 
