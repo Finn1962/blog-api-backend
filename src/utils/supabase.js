@@ -9,13 +9,13 @@ async function uploadImageToSupabase(imageFile) {
           upsert: false,
           cacheControl: "no-cache",
         })
-    : { error: null, data: null };
+    : { data: { publicUrl: null }, error: null };
 }
 
 async function updateImageInSupabase(imagePath, imageFile) {
   const deletedImage = imagePath
     ? await supabase.storage.from("images").remove([imagePath])
-    : { error: null, data: null };
+    : { data: { publicUrl: null }, error: null };
   if (deletedImage.error) return deletedImage;
 
   return imageFile
@@ -26,13 +26,13 @@ async function updateImageInSupabase(imagePath, imageFile) {
           upsert: false,
           cacheControl: "no-cache",
         })
-    : { error: null, data: null };
+    : { data: { publicUrl: null }, error: null };
 }
 
 async function deleteImageFromSupabase(imagePath) {
   return imagePath
     ? await supabase.storage.from("images").remove([imagePath])
-    : { error: null, data: null };
+    : { data: { publicUrl: null }, error: null };
 }
 
 function getImageURL(image_path) {

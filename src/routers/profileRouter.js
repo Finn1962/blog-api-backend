@@ -7,6 +7,7 @@ import { validateImage } from "../middleware/imageValidation.js";
 import {
   updateImageInSupabase,
   deleteImageFromSupabase,
+  getImageURL,
 } from "../utils/supabase.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -22,6 +23,11 @@ profileRouter.get(
         id: jwt.decode(req.cookies.accessToken).id,
       },
     });
+
+    if (userData.profile_image_path) {
+      const { data } = getImageURL(userData.profile_image_path);
+      userData.profile_image_url = data.publicUrl;
+    }
 
     res.json({ userData });
   },
@@ -42,7 +48,10 @@ profileRouter.put(
       }),
     body("newPassword")
       .optional()
-      .custom((value) => {
+      .custom((value, { req }) => {
+        if (value === "" && req.body.confirmNewPassword) {
+          throw new Error("New password is required");
+        }
         if (value !== "" && (value.length < 8 || value.length > 32)) {
           throw new Error("New password must be between 8 and 32 characters");
         }
@@ -51,8 +60,11 @@ profileRouter.put(
     body("confirmNewPassword")
       .optional()
       .custom((value, { req }) => {
+        if (value === "" && req.body.newPassword) {
+          throw new Error("New password must be confirmed");
+        }
         if (value !== req.body.newPassword) {
-          throw new Error("New passwords must match");
+          throw new Error("New password must match");
         }
         return true;
       }),
@@ -63,26 +75,33 @@ profileRouter.put(
   validateImage,
 
   async (req, res, next) => {
-    const { username, password, email_notifications } = matchedData(req);
-
-    console.log("augelöst");
+    const { username, currentPassword, newPassword, emailNotifications } =
+      matchedData(req);
 
     const user = await prisma.User.findUnique({
       where: { id: jwt.decode(req.cookies.accessToken).id },
     });
 
+    if (newPassword) {
+      const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
+      if (!isMatch) return next(new Error("Wrong password"));
+    }
+
     const image = req.image
       ? await updateImageInSupabase(user.profile_image_path, req.image)
       : await deleteImageFromSupabase(user.profile_image_path);
     if (image.error) return next(image.error);
+    console.log(image.data.path ? image.data.path : null);
 
     await prisma.User.update({
       where: { id: jwt.decode(req.cookies.accessToken).id },
       data: {
         username,
-        password_hash: password ? await bcrypt.hash(password, 12) : undefined,
-        email_notifications,
-        profile_image_path: image.data ? image.data.path : null,
+        password_hash: newPassword
+          ? await bcrypt.hash(newPassword, 12)
+          : undefined,
+        email_notifications: emailNotifications,
+        profile_image_path: image.data.path ? image.data.path : null,
       },
     });
 
