@@ -55,13 +55,15 @@ loginRouter.post("/", (req, res, next) => {
 
 loginRouter.get("/refresh", async (req, res) => {
   const tokenCookie = req?.cookies?.refreshToken;
+  const userId = jwt.decode(req.cookies.accessToken)?.id;
 
-  if (!tokenCookie) return res.status(401).json({ message: "Refresh denied" });
+  if (!tokenCookie || !userId)
+    return res.status(401).json({ message: "Refresh denied" });
 
   const refreshToken = await prisma.Refresh_Token.findUnique({
     where: {
       token: tokenCookie,
-      user_id: jwt.decode(req.cookies.accessToken).id,
+      user_id: userId,
     },
   });
 

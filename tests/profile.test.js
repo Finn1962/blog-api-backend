@@ -76,7 +76,7 @@ describe("profile", () => {
       .put("/profile")
       .set("Cookie", `accessToken=${accessToken}`)
       .field("username", "test-user")
-      .field("email_notifications", true)
+      .field("emailNotifications", true)
       .attach("image", dummyImageBuffer, {
         filename: fileName,
         contentType: "image/jpeg",

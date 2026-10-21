@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import prisma from "../db/prisma.js";
 import { body, param, matchedData, query } from "express-validator";
 import sanitizeHtml from "sanitize-html";
+import passport from "../utils/passport.js";
 import { validateInputs } from "../middleware/inputValidation.js";
 import { validateImage } from "../middleware/imageValidation.js";
 import {
@@ -71,67 +72,50 @@ const postValidation = [
 postRouter.get(
   "/",
 
-  async (req, res) => {
-    const posts = await prisma.Post.findMany({
-      include: {
-        tags: true,
-      },
-      orderBy: {
-        id: "asc",
-      },
-    });
-
-    posts.forEach((post) => {
-      if (post.image_path) {
-        const { data } = getImageURL(post.image_path);
-        post.image_url = data.publicUrl;
-      }
-    });
-
-    res.json({
-      posts,
-    });
-  },
-);
-
-postRouter.get(
-  "/search",
-
   [
     query("searchValue").optional().trim(),
     query("status").optional().trim().toUpperCase(),
+    query("skip").optional().isInt().toInt(),
+    query("take").optional().isInt().toInt(),
   ],
 
   validateInputs,
 
   async (req, res) => {
-    const { searchValue, status } = matchedData(req);
+    const { searchValue = "", status, skip, take } = matchedData(req);
 
-    const posts = await prisma.Post.findMany({
-      where: {
-        AND: [
-          {
-            OR: [
-              { title: { contains: searchValue, mode: "insensitive" } },
-              {
-                tags: {
-                  some: {
-                    content: { contains: searchValue, mode: "insensitive" },
-                  },
+    const where = {
+      AND: [
+        {
+          OR: [
+            { title: { contains: searchValue, mode: "insensitive" } },
+            {
+              tags: {
+                some: {
+                  content: { contains: searchValue, mode: "insensitive" },
                 },
               },
-            ],
-          },
-          { status: status === "ALL" ? { in: ["PUBLIC", "DRAFT"] } : status },
-        ],
-      },
-      include: {
-        tags: true,
-      },
-      orderBy: {
-        id: "asc",
-      },
-    });
+            },
+          ],
+        },
+        { status: status === "ALL" ? { in: ["PUBLIC", "DRAFT"] } : status },
+      ],
+    };
+
+    const [totalPostsNumber, posts] = await Promise.all([
+      prisma.Post.count({ where }),
+      prisma.Post.findMany({
+        skip,
+        take,
+        where,
+        include: {
+          tags: true,
+        },
+        orderBy: {
+          id: "asc",
+        },
+      }),
+    ]);
 
     posts.forEach((post) => {
       if (post.image_path) {
@@ -142,6 +126,7 @@ postRouter.get(
 
     res.json({
       posts,
+      totalPostsNumber,
     });
   },
 );
@@ -179,6 +164,8 @@ postRouter.get(
 postRouter.post(
   "/",
 
+  passport.authenticate("jwt", { session: false }),
+
   [...postValidation],
 
   validateInputs,
@@ -212,6 +199,8 @@ postRouter.post(
 postRouter.delete(
   "/:id",
 
+  passport.authenticate("jwt", { session: false }),
+
   [param("id").isInt().toInt()],
 
   validateInputs,
@@ -233,6 +222,8 @@ postRouter.delete(
 
 postRouter.put(
   "/",
+
+  passport.authenticate("jwt", { session: false }),
 
   [...postValidation, body("id").notEmpty().isInt().toInt()],
 

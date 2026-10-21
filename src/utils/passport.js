@@ -17,6 +17,11 @@ passport.use(
             message: "Incorrect username or password",
           });
 
+        if (user.role === "USER")
+          return done(null, false, {
+            message: "No authorization",
+          });
+
         const isMatch = await bcrypt.compare(password, user.password_hash);
 
         if (!isMatch)

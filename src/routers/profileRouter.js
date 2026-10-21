@@ -91,7 +91,6 @@ profileRouter.put(
       ? await updateImageInSupabase(user.profile_image_path, req.image)
       : await deleteImageFromSupabase(user.profile_image_path);
     if (image.error) return next(image.error);
-    console.log(image.data.path ? image.data.path : null);
 
     await prisma.User.update({
       where: { id: jwt.decode(req.cookies.accessToken).id },

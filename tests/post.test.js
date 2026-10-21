@@ -23,6 +23,9 @@ mock.module("../src/db/prisma.js", {
         findMany: mock.fn(async () => {
           return [];
         }),
+        count: mock.fn(async () => {
+          return 1;
+        }),
         create: mock.fn(),
         update: mock.fn(),
         delete: mock.fn(),
@@ -64,13 +67,14 @@ beforeEach(() => {
 });
 
 describe("profile", () => {
-  test("should get all posts", async () => {
+  test("should filter and return posts", async () => {
     const response = await request(app)
-      .get("/post")
+      .get("/post?searchValue=test&status=all")
       .set("Cookie", `accessToken=${accessToken}`);
 
     assert.strictEqual(response.statusCode, 200);
     assert.strictEqual(prisma.Post.findMany.mock.calls.length, 1);
+    assert.strictEqual(prisma.Post.count.mock.calls.length, 1);
   });
 
   test("should get unique post", async () => {
@@ -80,15 +84,6 @@ describe("profile", () => {
 
     assert.strictEqual(response.statusCode, 200);
     assert.strictEqual(prisma.Post.findUnique.mock.calls.length, 1);
-  });
-
-  test("should filter and return posts", async () => {
-    const response = await request(app)
-      .get("/post/search?searchValue=test&status=all")
-      .set("Cookie", `accessToken=${accessToken}`);
-
-    assert.strictEqual(response.statusCode, 200);
-    assert.strictEqual(prisma.Post.findMany.mock.calls.length, 1);
   });
 
   test("should create a new posts", async () => {

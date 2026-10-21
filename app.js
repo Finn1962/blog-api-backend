@@ -38,7 +38,7 @@ app.use("/login", loginRouter);
 
 app.use("/logout", logoutRouter);
 
-app.use("/post", passport.authenticate("jwt", { session: false }), postRouter);
+app.use("/post", postRouter);
 
 app.use(
   "/profile",
