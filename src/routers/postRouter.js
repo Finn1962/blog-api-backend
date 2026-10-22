@@ -84,6 +84,13 @@ postRouter.get(
   async (req, res) => {
     const { searchValue = "", status, skip, take } = matchedData(req);
 
+    const userRole = jwt.decode(req.cookies.accessToken)?.role;
+
+    let requestedStatus;
+    if (!userRole || userRole === "USER") requestedStatus = "PUBLIC";
+    else
+      requestedStatus = status === "ALL" ? { in: ["PUBLIC", "DRAFT"] } : status;
+
     const where = {
       AND: [
         {
@@ -98,7 +105,7 @@ postRouter.get(
             },
           ],
         },
-        { status: status === "ALL" ? { in: ["PUBLIC", "DRAFT"] } : status },
+        { status: requestedStatus },
       ],
     };
 
@@ -141,9 +148,14 @@ postRouter.get(
   async (req, res) => {
     const { id } = matchedData(req);
 
-    const post = await prisma.Post.findUnique({
+    const userRole = jwt.decode(req.cookies.accessToken)?.role;
+
+    let requestedStatus = { in: ["PUBLIC", "DRAFT"] };
+    if (!userRole || userRole === "USER") requestedStatus = "PUBLIC";
+
+    const post = await prisma.Post.findFirst({
       where: {
-        id,
+        AND: [{ id }, { status: requestedStatus }],
       },
       include: {
         tags: true,
