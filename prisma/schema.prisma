@@ -18,6 +18,23 @@ enum Status {
   PUBLIC
 }
 
+enum PROG_LANG {
+  JAVA_SCRIPT
+  HTML
+  CSS
+  TYPE_SCRIPT
+  PYTHON
+  SQL
+  GO
+  RUBY
+  RUST
+  PHP
+  JAVA
+  C
+  C_PLUS_PLUS
+  C_SHARP
+}
+
 model User {
   id                  Int             @id @default(autoincrement())
   email               String          @unique
@@ -36,6 +53,7 @@ model Post {
   id          Int       @id @default(autoincrement())
   title       String
   content     String
+  prog_lang   PROG_LANG @default(JAVA_SCRIPT)
   author      User      @relation(fields: [author_id], references: [id])
   author_id   Int
   status      Status    @default(DRAFT)

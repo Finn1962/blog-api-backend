@@ -6,7 +6,7 @@ function refreshTokenCleanup() {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-    await prisma.post.deleteMany({
+    await prisma.Refresh_Token.deleteMany({
       where: {
         created_at: {
           lte: oneWeekAgo, // kleiner oder gleich vor einer Woche

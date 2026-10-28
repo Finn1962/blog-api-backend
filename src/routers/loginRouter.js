@@ -4,54 +4,73 @@ import jwt from "jsonwebtoken";
 import passport from "../utils/passport.js";
 import crypto from "crypto";
 import prisma from "../db/prisma.js";
+import { body, matchedData } from "express-validator";
 
 const loginRouter = express.Router();
 
-loginRouter.post("/", (req, res, next) => {
-  passport.authenticate("local", async (err, user, info) => {
-    if (err) return next(err);
+loginRouter.post(
+  "/",
 
-    if (!user) {
-      return res.status(401).json({ message: info?.message || "Login failed" });
-    }
+  [body("portal").optional().toUpperCase()],
 
-    const payload = { id: user.id, username: user.username, role: user.role };
+  (req, res, next) => {
+    const { portal = "USER" } = matchedData(req);
 
-    const accessToken = jwt.sign(payload, process.env.JWT_SECRET_KEY, {
-      expiresIn: "10m",
-    });
+    passport.authenticate("local", async (err, user, info) => {
+      if (err) return next(err);
 
-    const refreshToken = crypto.randomBytes(32).toString("hex");
+      if (!user) {
+        return res.status(401).json({
+          message: "Login failed",
+          errors: [info?.message],
+        });
+      }
 
-    await prisma.Refresh_Token.upsert({
-      where: {
-        user_id: user.id,
-      },
-      update: {
-        token: refreshToken,
-      },
-      create: {
-        token: refreshToken,
-        user_id: user.id,
-      },
-    });
+      if (portal === "AUTHOR" && user.role === "USER") {
+        return res.status(401).json({
+          message: "Login failed",
+          errors: ["No autorisation"],
+        });
+      }
 
-    return res
-      .cookie("accessToken", accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-      })
-      .cookie("refreshToken", refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
-        sameSite: "strict",
-        path: "/login/refresh",
-      })
-      .json({ message: "Login successful" });
-  })(req, res, next);
-});
+      const payload = { id: user.id, username: user.username, role: user.role };
+
+      const accessToken = jwt.sign(payload, process.env.JWT_SECRET_KEY, {
+        expiresIn: "10m",
+      });
+
+      const refreshToken = crypto.randomBytes(32).toString("hex");
+
+      await prisma.Refresh_Token.upsert({
+        where: {
+          user_id: user.id,
+        },
+        update: {
+          token: refreshToken,
+        },
+        create: {
+          token: refreshToken,
+          user_id: user.id,
+        },
+      });
+
+      return res
+        .cookie("accessToken", accessToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+        })
+        .cookie("refreshToken", refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
+          sameSite: "strict",
+          path: "/login/refresh",
+        })
+        .json({ message: "Login successful" });
+    })(req, res, next);
+  },
+);
 
 loginRouter.get("/refresh", async (req, res) => {
   const tokenCookie = req?.cookies?.refreshToken;

@@ -17,15 +17,10 @@ mock.module("../src/db/prisma.js", {
   exports: {
     default: {
       Post: {
-        findUnique: mock.fn(async () => {
-          return {};
-        }),
-        findMany: mock.fn(async () => {
-          return [];
-        }),
-        count: mock.fn(async () => {
-          return 1;
-        }),
+        findUnique: mock.fn(async () => ({})),
+        findFirst: mock.fn(async () => ({})),
+        findMany: mock.fn(async () => []),
+        count: mock.fn(async () => 1),
         create: mock.fn(),
         update: mock.fn(),
         delete: mock.fn(),
@@ -83,7 +78,7 @@ describe("profile", () => {
       .set("Cookie", `accessToken=${accessToken}`);
 
     assert.strictEqual(response.statusCode, 200);
-    assert.strictEqual(prisma.Post.findUnique.mock.calls.length, 1);
+    assert.strictEqual(prisma.Post.findFirst.mock.calls.length, 1);
   });
 
   test("should create a new posts", async () => {

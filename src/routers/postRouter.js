@@ -7,6 +7,7 @@ import sanitizeHtml from "sanitize-html";
 import passport from "../utils/passport.js";
 import { validateInputs } from "../middleware/inputValidation.js";
 import { validateImage } from "../middleware/imageValidation.js";
+import { checkRole } from "../middleware/roleCheck.js";
 import {
   uploadImageToSupabase,
   deleteImageFromSupabase,
@@ -19,6 +20,7 @@ const postRouter = express.Router();
 const postValidation = [
   body("title").trim().notEmpty().withMessage("Title cannot be empty"),
   body("status").trim().notEmpty().toUpperCase(),
+  body("progLang").trim().notEmpty().toUpperCase(),
   body("tags")
     .optional()
     .customSanitizer((value) => {
@@ -43,7 +45,7 @@ const postValidation = [
       const sanitizeOptions = {
         // prettier-ignore
         allowedTags: [
-            "b", "i", "em", "strong", "a", "p", "br" ,"ul", "ol", 
+            "b", "i", "em", "strong", "u", "a", "p", "br" ,"ul", "ol", 
             "li", "h1", "h2", "h3", "blockquote","pre", "code", "span",
           ],
         allowedAttributes: {
@@ -178,13 +180,15 @@ postRouter.post(
 
   passport.authenticate("jwt", { session: false }),
 
+  checkRole(["AUTHOR", "ADMIN"]),
+
   [...postValidation],
 
   validateInputs,
   validateImage,
 
   async (req, res, next) => {
-    const { title, content, status, tags } = matchedData(req);
+    const { title, content, status, progLang, tags } = matchedData(req);
 
     const uploadedImage = await uploadImageToSupabase(req.image);
     if (uploadedImage.error) return next(uploadedImage.error);
@@ -195,6 +199,7 @@ postRouter.post(
         content,
         author_id: jwt.decode(req.cookies.accessToken).id,
         status,
+        prog_lang: progLang,
         image_path: uploadedImage.data ? uploadedImage.data.path : null,
         tags: {
           create: tags,
@@ -212,6 +217,8 @@ postRouter.delete(
   "/:id",
 
   passport.authenticate("jwt", { session: false }),
+
+  checkRole(["AUTHOR", "ADMIN"]),
 
   [param("id").isInt().toInt()],
 
@@ -237,13 +244,15 @@ postRouter.put(
 
   passport.authenticate("jwt", { session: false }),
 
+  checkRole(["AUTHOR", "ADMIN"]),
+
   [...postValidation, body("id").notEmpty().isInt().toInt()],
 
   validateInputs,
   validateImage,
 
   async (req, res, next) => {
-    const { title, content, status, tags, id } = matchedData(req);
+    const { title, content, status, progLang, tags, id } = matchedData(req);
 
     const post = await prisma.Post.findUnique({
       where: { id },
@@ -263,6 +272,7 @@ postRouter.put(
       content,
       author_id: jwt.decode(req.cookies.accessToken).id,
       status,
+      prog_lang: progLang,
       image_path: updatedImage.data ? updatedImage.data.path : null,
     };
 

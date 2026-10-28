@@ -14,19 +14,14 @@ passport.use(
 
         if (!user)
           return done(null, false, {
-            message: "Incorrect username or password",
-          });
-
-        if (user.role === "USER")
-          return done(null, false, {
-            message: "No authorization",
+            message: "Incorrect login details",
           });
 
         const isMatch = await bcrypt.compare(password, user.password_hash);
 
         if (!isMatch)
           return done(null, false, {
-            message: "Incorrect username or password",
+            message: "Incorrect login details",
           });
 
         return done(null, user);
