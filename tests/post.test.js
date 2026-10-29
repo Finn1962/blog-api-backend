@@ -4,7 +4,7 @@ import assert from "node:assert";
 import request from "supertest";
 import jwt from "jsonwebtoken";
 
-const payload = { id: 1, username: "test-user" };
+const payload = { id: 1, username: "test-user", role: "ADMIN" };
 
 const accessToken = jwt.sign(payload, process.env.JWT_SECRET_KEY, {
   expiresIn: "1h",
@@ -88,6 +88,7 @@ describe("profile", () => {
       .field("title", "test-title")
       .field("content", "some-test-content")
       .field("status", "draft")
+      .field("progLang", "JavaScript")
       .field("tags", "tag1, tag2 ,tag3")
       .attach("image", dummyImageBuffer, {
         filename: fileName,
@@ -116,7 +117,9 @@ describe("profile", () => {
       .set("Cookie", `accessToken=${accessToken}`)
       .field("title", "test-title")
       .field("id", 2)
+      .field("progLang", "javascript")
       .field("content", "some-test-content")
+      .field("status", "draft")
       .field("status", "draft")
       .field("tags", "tag1, tag2 ,tag3")
       .attach("image", dummyImageBuffer, {

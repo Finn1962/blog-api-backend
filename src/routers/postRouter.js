@@ -186,9 +186,7 @@ postRouter.post(
 
   authUser(),
   checkRole(["AUTHOR", "ADMIN"]),
-
   [...postValidation],
-
   validateInputs,
   validateImage,
 
@@ -248,9 +246,7 @@ postRouter.put(
 
   authUser(),
   checkRole(["AUTHOR", "ADMIN"]),
-
   [...postValidation, body("id").notEmpty().isInt().toInt()],
-
   validateInputs,
   validateImage,
 
@@ -260,23 +256,19 @@ postRouter.put(
     const post = await prisma.Post.findUnique({
       where: { id },
     });
-    const updatedImage = await updateImageInSupabase(
-      post.image_path,
-      req.image,
-    );
-    if (updatedImage.error) return next(updatedImage.error);
 
-    const deletedImage =
-      !req.image && (await deleteImageFromSupabase(post.image_path));
-    if (deletedImage.error) return next(deletedImage.error);
+    const image = req.image
+      ? await updateImageInSupabase(post.image_path, req.image)
+      : await deleteImageFromSupabase(post.image_path);
+    if (image.error) return next(image.error);
 
     const updateData = {
       title,
       content,
-      author_id: jwt.decode(req.cookies.accessToken).id,
+      author_id: req.user.id,
       status,
       prog_lang: progLang,
-      image_path: updatedImage.data ? updatedImage.data.path : null,
+      image_path: image.data.path ? image.data.path : null,
     };
 
     if (tags) {
