@@ -4,10 +4,10 @@ import jwt from "jsonwebtoken";
 import prisma from "../db/prisma.js";
 import { body, param, matchedData, query } from "express-validator";
 import sanitizeHtml from "sanitize-html";
-import passport from "../utils/passport.js";
 import { validateInputs } from "../middleware/inputValidation.js";
 import { validateImage } from "../middleware/imageValidation.js";
 import { checkRole } from "../middleware/roleCheck.js";
+import { authUser } from "../middleware/authUser.js";
 import {
   uploadImageToSupabase,
   deleteImageFromSupabase,
@@ -74,6 +74,8 @@ const postValidation = [
 postRouter.get(
   "/",
 
+  authUser({ isOptional: true }),
+
   [
     query("searchValue").optional().trim(),
     query("status").optional().trim().toUpperCase(),
@@ -86,12 +88,14 @@ postRouter.get(
   async (req, res) => {
     const { searchValue = "", status, skip, take } = matchedData(req);
 
-    const userRole = jwt.decode(req.cookies.accessToken)?.role;
+    const userRole = req.user?.role;
 
     let requestedStatus;
-    if (!userRole || userRole === "USER") requestedStatus = "PUBLIC";
-    else
+    if (!userRole || userRole === "USER") {
+      requestedStatus = "PUBLIC";
+    } else {
       requestedStatus = status === "ALL" ? { in: ["PUBLIC", "DRAFT"] } : status;
+    }
 
     const where = {
       AND: [
@@ -143,6 +147,8 @@ postRouter.get(
 postRouter.get(
   "/:id",
 
+  authUser({ isOptional: true }),
+
   [param("id").notEmpty().isInt().toInt()],
 
   validateInputs,
@@ -150,7 +156,7 @@ postRouter.get(
   async (req, res) => {
     const { id } = matchedData(req);
 
-    const userRole = jwt.decode(req.cookies.accessToken)?.role;
+    const userRole = req.user?.role;
 
     let requestedStatus = { in: ["PUBLIC", "DRAFT"] };
     if (!userRole || userRole === "USER") requestedStatus = "PUBLIC";
@@ -178,8 +184,7 @@ postRouter.get(
 postRouter.post(
   "/",
 
-  passport.authenticate("jwt", { session: false }),
-
+  authUser(),
   checkRole(["AUTHOR", "ADMIN"]),
 
   [...postValidation],
@@ -216,8 +221,7 @@ postRouter.post(
 postRouter.delete(
   "/:id",
 
-  passport.authenticate("jwt", { session: false }),
-
+  authUser(),
   checkRole(["AUTHOR", "ADMIN"]),
 
   [param("id").isInt().toInt()],
@@ -242,8 +246,7 @@ postRouter.delete(
 postRouter.put(
   "/",
 
-  passport.authenticate("jwt", { session: false }),
-
+  authUser(),
   checkRole(["AUTHOR", "ADMIN"]),
 
   [...postValidation, body("id").notEmpty().isInt().toInt()],

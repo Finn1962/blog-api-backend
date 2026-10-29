@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import { body, matchedData } from "express-validator";
 import prisma from "../db/prisma.js";
+import { authUser } from "../middleware/authUser.js";
 import { validateInputs } from "../middleware/inputValidation.js";
 import { validateImage } from "../middleware/imageValidation.js";
 import {
@@ -13,6 +14,8 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
 const profileRouter = express.Router();
+
+profileRouter.use("/", authUser());
 
 profileRouter.get(
   "/",

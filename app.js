@@ -4,12 +4,12 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import multer from "multer";
 import passport from "./src/utils/passport.js";
+import { errorHandeling } from "./src/middleware/errorHandeling.js";
+import { refreshTokenCleanup } from "./src/utils/refreshTokenCleanup.js";
 import loginRouter from "./src/routers/loginRouter.js";
 import logoutRouter from "./src/routers/logoutRouter.js";
 import postRouter from "./src/routers/postRouter.js";
 import registerRouter from "./src/routers/registerRouter.js";
-import { errorHandeling } from "./src/middleware/errorHandeling.js";
-import { refreshTokenCleanup } from "./src/utils/refreshTokenCleanup.js";
 import profileRouter from "./src/routers/profileRouter.js";
 
 const app = express();
@@ -40,11 +40,7 @@ app.use("/logout", logoutRouter);
 
 app.use("/post", postRouter);
 
-app.use(
-  "/profile",
-  passport.authenticate("jwt", { session: false }),
-  profileRouter,
-);
+app.use("/profile", profileRouter);
 
 app.use(errorHandeling);
 
