@@ -19,6 +19,7 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.4.0",
     "node-cron": "^4.6.0",
+    "nodemailer": "^10.3.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
@@ -43,7 +44,8 @@
     "cors@2.8.6": true,
     "@supabase/supabase-js": true,
     "multer@2.4.0": true,
-    "sanitize-html@2.18.0": true
+    "sanitize-html@2.18.0": true,
+    "nodemailer@10.3.1": true
   },
   "description": "",
   "main": "app.js",

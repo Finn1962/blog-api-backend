@@ -5,7 +5,11 @@ import cors from "cors";
 import multer from "multer";
 import passport from "./src/utils/passport.js";
 import { errorHandeling } from "./src/middleware/errorHandeling.js";
-import { refreshTokenCleanup } from "./src/utils/refreshTokenCleanup.js";
+import {
+  refreshTokenCleanup,
+  verificationTokenCleanup,
+  accountCleanup,
+} from "./src/utils/dbCleanup.js";
 import loginRouter from "./src/routers/loginRouter.js";
 import logoutRouter from "./src/routers/logoutRouter.js";
 import postRouter from "./src/routers/postRouter.js";
@@ -28,7 +32,11 @@ app.use(express.json());
 
 app.use(cookieParser());
 
-if (process.env.NODE_ENV !== "test") refreshTokenCleanup();
+if (process.env.NODE_ENV !== "test") {
+  refreshTokenCleanup();
+  verificationTokenCleanup();
+  accountCleanup();
+}
 
 app.use(passport.initialize());
 

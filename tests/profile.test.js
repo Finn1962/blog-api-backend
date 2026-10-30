@@ -19,9 +19,13 @@ mock.module("../src/db/prisma.js", {
     default: {
       User: {
         findUnique: mock.fn(async () => ({
+          username: "test-user",
           email: "test@example.com",
           password_hash: "some-random-hash",
           id: 1,
+        })),
+        findFirst: mock.fn(async () => ({
+          id: 10,
         })),
         update: mock.fn(),
       },
@@ -71,7 +75,7 @@ describe("profile", () => {
     ]);
   });
 
-  test("should update userdate", async () => {
+  test("should update userdata", async () => {
     const response = await request(app)
       .put("/profile")
       .set("Cookie", `accessToken=${accessToken}`)
@@ -88,7 +92,6 @@ describe("profile", () => {
         where: { id: 1 },
         data: {
           username: "test-user",
-          password_hash: undefined,
           email_notifications: true,
           profile_image_path: "test-path",
         },

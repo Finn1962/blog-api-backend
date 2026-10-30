@@ -78,6 +78,8 @@ profileRouter.put(
   validateImage,
 
   async (req, res, next) => {
+    console.log("AUGELÖST");
+
     const { username, currentPassword, newPassword, emailNotifications } =
       matchedData(req);
 
@@ -85,7 +87,7 @@ profileRouter.put(
       prisma.User.findUnique({
         where: { id: req.user.id },
       }),
-      prisma.user.findUnique({
+      prisma.User.findFirst({
         where: {
           username,
         },

@@ -39,14 +39,24 @@ model User {
   id                  Int             @id @default(autoincrement())
   email               String          @unique
   password_hash       String
-  username            String         @unique
-  created_at          DateTime       @default(now())
-  role                Role           @default(USER)
+  username            String          @unique
+  created_at          DateTime        @default(now())
+  role                Role            @default(USER)
   profile_image_path  String?        
-  email_notifications Boolean        @default(false)
+  email_notifications Boolean         @default(false)
   blogs               Post[]
   comments            Comment[]
   refresh_token       Refresh_Token?
+  verification_token  Verification_Token?
+  is_verified         Boolean         @default(false)
+}
+
+model Verification_Token {
+  id             Int        @id @default(autoincrement())
+  token          String     @unique
+  user           User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id        Int        @unique
+  created_at     DateTime   @default(now())
 }
 
 model Post {
