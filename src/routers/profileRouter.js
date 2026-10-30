@@ -81,30 +81,59 @@ profileRouter.put(
     const { username, currentPassword, newPassword, emailNotifications } =
       matchedData(req);
 
-    const user = await prisma.User.findUnique({
-      where: { id: jwt.decode(req.cookies.accessToken).id },
-    });
+    const [user, isUsernameTaken] = await Promise.all([
+      prisma.User.findUnique({
+        where: { id: req.user.id },
+      }),
+      prisma.user.findUnique({
+        where: {
+          username,
+        },
+        select: {
+          id: true,
+        },
+      }),
+    ]);
+
+    const usernameChanged = user.username !== username;
+    if (usernameChanged && isUsernameTaken) {
+      res.status(409).json({
+        message: "Changing user data failed",
+        errors: [{ msg: "Username is already taken" }],
+      });
+    }
 
     if (newPassword) {
       const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
-      if (!isMatch) return next(new Error("Wrong password"));
+      if (!isMatch)
+        return res.status(401).json({
+          message: "Changing user data failed",
+          errors: [{ msg: "Wrong password" }],
+        });
     }
 
-    const image = req.image
+    const updatedImage = req.image
       ? await updateImageInSupabase(user.profile_image_path, req.image)
-      : await deleteImageFromSupabase(user.profile_image_path);
-    if (image.error) return next(image.error);
+      : null;
+    if (updatedImage?.error) return next(updatedImage.error);
+
+    const deletedImage = !req.image
+      ? await deleteImageFromSupabase(user.profile_image_path)
+      : null;
+    if (deletedImage?.error) return next(deletedImage.error);
+
+    const data = {
+      username,
+      email_notifications: emailNotifications,
+    };
+
+    if (newPassword) data.password_hash = await bcrypt.hash(newPassword, 12);
+    if (updatedImage) data.profile_image_path = updatedImage.data.path;
+    if (deletedImage) data.profile_image_path = null;
 
     await prisma.User.update({
-      where: { id: jwt.decode(req.cookies.accessToken).id },
-      data: {
-        username,
-        password_hash: newPassword
-          ? await bcrypt.hash(newPassword, 12)
-          : undefined,
-        email_notifications: emailNotifications,
-        profile_image_path: image.data.path ? image.data.path : null,
-      },
+      where: { id: req.user.id },
+      data,
     });
 
     res.json({ message: "User data successfully changed" });

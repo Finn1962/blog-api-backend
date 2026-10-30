@@ -51,22 +51,18 @@ registerRouter.post(
         },
       });
     } catch (error) {
-      if (
-        error?.meta?.driverAdapterError?.cause?.constraint?.index ===
-        "User_username_key"
-      )
-        return res.status(409).json({
-          message: "Registration failed",
-          errors: [{ msg: "Username is already taken" }],
-        });
-      if (
-        error?.meta?.driverAdapterError?.cause?.constraint?.index ===
-        "User_email_key"
-      )
-        return res.status(409).json({
-          message: "Registration failed",
-          errors: [{ msg: "Email is already taken" }],
-        });
+      switch (error?.meta?.driverAdapterError?.cause?.constraint?.index) {
+        case "User_username_key":
+          return res.status(409).json({
+            message: "Registration failed",
+            errors: [{ msg: "Username is already taken" }],
+          });
+        case "User_email_key":
+          return res.status(409).json({
+            message: "Registration failed",
+            errors: [{ msg: "Email is already taken" }],
+          });
+      }
     }
 
     res.status(200).json({ message: "Registration successful", errors: [] });

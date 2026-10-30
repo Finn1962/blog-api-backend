@@ -257,22 +257,28 @@ postRouter.put(
       where: { id },
     });
 
-    const image = req.image
+    const updatedImage = req.image
       ? await updateImageInSupabase(post.image_path, req.image)
-      : await deleteImageFromSupabase(post.image_path);
-    if (image.error) return next(image.error);
+      : null;
+    if (updatedImage?.error) return next(updatedImage.error);
 
-    const updateData = {
+    const deletedImage = !req.image
+      ? await deleteImageFromSupabase(post.image_path)
+      : null;
+    if (deletedImage?.error) return next(deletedImage.error);
+
+    const data = {
       title,
       content,
       author_id: req.user.id,
       status,
       prog_lang: progLang,
-      image_path: image.data.path ? image.data.path : null,
     };
 
+    if (updatedImage) data.image_path = updatedImage.data.path;
+    if (deletedImage) data.image_path = null;
     if (tags) {
-      updateData.tags = {
+      data.tags = {
         deleteMany: {},
         create: tags,
       };
@@ -280,7 +286,7 @@ postRouter.put(
 
     await prisma.Post.update({
       where: { id },
-      data: updateData,
+      data,
     });
 
     res.json({ message: "Post updated successfully" });
