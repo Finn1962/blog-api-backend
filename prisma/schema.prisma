@@ -83,9 +83,8 @@ model Tag {
 
 model Comment {
   id          Int      @id @default(autoincrement())
-  title       String
   content     String
-  blog        Post     @relation(fields: [post_id], references: [id])
+  post        Post     @relation(fields: [post_id], references: [id])
   post_id     Int
   author      User     @relation(fields: [author_id], references: [id])
   author_id   Int

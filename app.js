@@ -15,6 +15,7 @@ import logoutRouter from "./src/routers/logoutRouter.js";
 import postRouter from "./src/routers/postRouter.js";
 import registerRouter from "./src/routers/registerRouter.js";
 import profileRouter from "./src/routers/profileRouter.js";
+import commentRouter from "./src/routers/commentRouter.js";
 
 const app = express();
 
@@ -47,6 +48,8 @@ app.use("/login", loginRouter);
 app.use("/logout", logoutRouter);
 
 app.use("/post", postRouter);
+
+app.use("/comment", commentRouter);
 
 app.use("/profile", profileRouter);
 
