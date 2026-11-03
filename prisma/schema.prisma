@@ -57,6 +57,7 @@ model Verification_Token {
   user           User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
   user_id        Int        @unique
   created_at     DateTime   @default(now())
+  is_used        Boolean    @default(false)
 }
 
 model Post {

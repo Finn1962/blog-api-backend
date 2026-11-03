@@ -37,12 +37,14 @@ registerRouter.post(
       }
       return true;
     }),
+    body("sendEmailNotification").isBoolean().toBoolean(),
   ],
 
   validateInputs,
 
   async (req, res) => {
-    const { username, email, password } = matchedData(req);
+    const { username, email, password, sendEmailNotification } =
+      matchedData(req);
 
     const verificationToken = crypto.randomBytes(32).toString("hex");
 
@@ -52,6 +54,7 @@ registerRouter.post(
           username,
           email,
           password_hash: await bcrypt.hash(password, 12),
+          email_notifications: sendEmailNotification,
           verification_token: {
             create: {
               token: verificationToken,
@@ -86,7 +89,7 @@ registerRouter.post(
 registerRouter.get(
   "/:token",
 
-  [param("token").notEmpty()],
+  [param("token").isInt().toInt()],
 
   validateInputs,
 
@@ -97,12 +100,15 @@ registerRouter.get(
       where: { token },
     });
 
-    console.log(foundToken);
     if (!foundToken) {
       return res.status(422).json({
         message: "Authorization failed",
         errors: [{ msg: "Invalid token" }],
       });
+    }
+
+    if (foundToken.is_used) {
+      return res.json({ message: "Authorization successful", errors: [] });
     }
 
     const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
@@ -122,8 +128,9 @@ registerRouter.get(
       },
     });
 
-    await prisma.Verification_Token.delete({
+    await prisma.Verification_Token.update({
       where: { token },
+      data: { is_used: true },
     });
 
     res.json({ message: "Authorization successful", errors: [] });

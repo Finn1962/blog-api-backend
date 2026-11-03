@@ -14,7 +14,9 @@ mock.module("../src/db/prisma.js", {
         findUnique: mock.fn(async () => ({
           user_id: 1,
           created_at: new Date(Date.now()),
+          is_used: false,
         })),
+        update: mock.fn(),
       },
     },
   },
@@ -46,6 +48,7 @@ describe("register", () => {
       email: "test@example.com",
       password: "test-password",
       confirmPassword: "test-password",
+      sendEmailNotification: false,
     });
     assert.strictEqual(response.statusCode, 200);
     assert.strictEqual(prisma.User.create.mock.calls.length, 1);
@@ -62,7 +65,7 @@ describe("register", () => {
       prisma.Verification_Token.findUnique.mock.calls[0].arguments,
       [
         {
-          where: 123456,
+          where: { token: 123456 },
         },
       ],
     );
