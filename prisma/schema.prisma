@@ -46,6 +46,7 @@ model User {
   email_notifications Boolean         @default(false)
   blogs               Post[]
   comments            Comment[]
+  response_comments   Response_Comment[]
   refresh_token       Refresh_Token?
   verification_token  Verification_Token?
   is_verified         Boolean         @default(false)
@@ -86,6 +87,17 @@ model Comment {
   content     String
   post        Post     @relation(fields: [post_id], references: [id])
   post_id     Int
+  author      User     @relation(fields: [author_id], references: [id])
+  author_id   Int
+  responses   Response_Comment[]
+  created_at  DateTime @default(now())
+}
+
+model Response_Comment {
+  id          Int      @id @default(autoincrement())
+  content     String
+  comment     Comment  @relation(fields: [comment_id], references: [id])
+  comment_id  Int
   author      User     @relation(fields: [author_id], references: [id])
   author_id   Int
   created_at  DateTime @default(now())

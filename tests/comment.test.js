@@ -38,7 +38,6 @@ describe("comment", () => {
         where: {
           post_id: 2,
         },
-
         include: {
           author: {
             select: {
@@ -46,6 +45,9 @@ describe("comment", () => {
               profile_image_path: true,
             },
           },
+        },
+        orderBy: {
+          created_at: "desc",
         },
       },
     ]);

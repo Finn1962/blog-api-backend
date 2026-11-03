@@ -30,6 +30,9 @@ commentRouter.get(
           },
         },
       },
+      orderBy: {
+        created_at: "desc",
+      },
     });
 
     comments.forEach((comment) => {
@@ -52,12 +55,13 @@ commentRouter.post(
     body("content").notEmpty().withMessage("Content is required"),
     body("postId").notEmpty().isInt().toInt(),
     body("authorId").notEmpty().isInt().toInt(),
+    body("isResponse").optional().isBoolean().toBoolean(),
   ],
 
   validateInputs,
 
   async (req, res) => {
-    const { content, postId, authorId } = matchedData(req);
+    const { content, postId, authorId, isResponse } = matchedData(req);
     await prisma.Comment.create({
       data: {
         content,

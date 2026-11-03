@@ -89,7 +89,7 @@ registerRouter.post(
 registerRouter.get(
   "/:token",
 
-  [param("token").isInt().toInt()],
+  [param("token").notEmpty()],
 
   validateInputs,
 
