@@ -46,19 +46,12 @@ model User {
   email_notifications Boolean         @default(false)
   blogs               Post[]
   comments            Comment[]
+  likes               Comment_Like[]
   response_comments   Response_Comment[]
   refresh_token       Refresh_Token?
   verification_token  Verification_Token?
+  reset_token         Reset_Token?
   is_verified         Boolean         @default(false)
-}
-
-model Verification_Token {
-  id             Int        @id @default(autoincrement())
-  token          String     @unique
-  user           User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  user_id        Int        @unique
-  created_at     DateTime   @default(now())
-  is_used        Boolean    @default(false)
 }
 
 model Post {
@@ -90,6 +83,7 @@ model Comment {
   author      User     @relation(fields: [author_id], references: [id])
   author_id   Int
   responses   Response_Comment[]
+  likes       Comment_Like[]
   created_at  DateTime @default(now())
 }
 
@@ -103,7 +97,35 @@ model Response_Comment {
   created_at  DateTime @default(now())
 }
 
+model Comment_Like {
+  id          Int      @id @default(autoincrement())
+  comment     Comment  @relation(fields: [comment_id], references: [id])
+  comment_id  Int
+  user        User     @relation(fields: [user_id], references: [id])
+  user_id     Int
+  created_at  DateTime @default(now())
+  
+  @@unique([comment_id, user_id])
+}
+
+model Verification_Token {
+  id             Int        @id @default(autoincrement())
+  token          String     @unique
+  user           User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id        Int        @unique
+  created_at     DateTime   @default(now())
+  is_used        Boolean    @default(false)
+}
+
 model Refresh_Token {
+  id         Int        @id @default(autoincrement())
+  token      String
+  user       User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id    Int        @unique
+  created_at DateTime   @default(now())
+}
+
+model Reset_Token {
   id         Int        @id @default(autoincrement())
   token      String
   user       User       @relation(fields: [user_id], references: [id], onDelete: Cascade)

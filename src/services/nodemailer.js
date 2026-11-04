@@ -31,4 +31,17 @@ function sendEmailToVerifiyEmail({ email, verificationToken }) {
   });
 }
 
-export { sendEmailToVerifiyEmail };
+function sendEmailToResetPassword({ email, resetToken }) {
+  const mailOptions = {
+    from: "process.env.GOOGLE_ACC_EMAIL",
+    to: email,
+    subject: "Your reset email",
+    text: `Hello, click here to reset your password for CodersBlog: ${process.env.USER_FRONTEND_URL}verification/${resetToken}`,
+  };
+
+  transporter.sendMail(mailOptions, (error) => {
+    if (error) return console.log("Error while sending email:", error);
+  });
+}
+
+export { sendEmailToVerifiyEmail, sendEmailToResetPassword };

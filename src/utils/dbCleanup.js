@@ -2,7 +2,7 @@ import cron from "node-cron";
 import prisma from "../db/prisma.js";
 
 function refreshTokenCleanup() {
-  cron.schedule("0 0 * * *", async () => {
+  cron.schedule("0 * * * *", async () => {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
@@ -21,7 +21,7 @@ function refreshTokenCleanup() {
 }
 
 function verificationTokenCleanup() {
-  cron.schedule("0 0 * * *", async () => {
+  cron.schedule("0 * * * *", async () => {
     const oneDayAgo = new Date();
     oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
@@ -35,6 +35,25 @@ function verificationTokenCleanup() {
 
     if (result.count > 0) {
       console.log(`[Cleanup] ${result.count} old verification-tokens deleted`);
+    }
+  });
+}
+
+function resetTokenCleanup() {
+  cron.schedule("0 * * * *", async () => {
+    const oneDayAgo = new Date();
+    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+
+    const result = await prisma.Reset_Token.deleteMany({
+      where: {
+        created_at: {
+          lte: oneDayAgo,
+        },
+      },
+    });
+
+    if (result.count > 0) {
+      console.log(`[Cleanup] ${result.count} old reset-tokens deleted`);
     }
   });
 }
@@ -63,4 +82,9 @@ function accountCleanup() {
   });
 }
 
-export { refreshTokenCleanup, verificationTokenCleanup, accountCleanup };
+export {
+  refreshTokenCleanup,
+  verificationTokenCleanup,
+  resetTokenCleanup,
+  accountCleanup,
+};

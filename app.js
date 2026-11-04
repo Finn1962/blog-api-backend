@@ -9,6 +9,7 @@ import {
   refreshTokenCleanup,
   verificationTokenCleanup,
   accountCleanup,
+  resetTokenCleanup,
 } from "./src/utils/dbCleanup.js";
 import loginRouter from "./src/routers/loginRouter.js";
 import logoutRouter from "./src/routers/logoutRouter.js";
@@ -36,6 +37,7 @@ app.use(cookieParser());
 if (process.env.NODE_ENV !== "test") {
   refreshTokenCleanup();
   verificationTokenCleanup();
+  resetTokenCleanup();
   accountCleanup();
 }
 

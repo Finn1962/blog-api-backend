@@ -3,7 +3,10 @@ import express from "express";
 import bcrypt from "bcrypt";
 import { body, param, matchedData } from "express-validator";
 import prisma from "../db/prisma.js";
-import { sendEmailToVerifiyEmail } from "../services/nodemailer.js";
+import {
+  sendEmailToVerifiyEmail,
+  sendEmailToResetPassword,
+} from "../services/nodemailer.js";
 import { validateInputs } from "../middleware/inputValidation.js";
 import crypto from "crypto";
 
@@ -134,6 +137,55 @@ registerRouter.get(
     });
 
     res.json({ message: "Authorization successful", errors: [] });
+  },
+);
+
+registerRouter.post(
+  "/reset-password",
+
+  [
+    body("email")
+      .notEmpty()
+      .isEmail()
+      .withMessage("Invalid email address")
+      .trim()
+      .normalizeEmail(),
+  ],
+
+  validateInputs,
+
+  async (req, res) => {
+    const { email } = matchedData(req);
+
+    const user = await prisma.User.findUnique({
+      where: { email },
+    });
+
+    if (!user)
+      return res
+        .status(200)
+        .json({ message: "Email is sent if the email address exists." });
+
+    const resetToken = crypto.randomBytes(32).toString("hex");
+
+    await prisma.Reset_Token.upsert({
+      where: {
+        user_id: user.id,
+      },
+      update: {
+        token: resetToken,
+        created_at: new Date(),
+      },
+      create: {
+        token: resetToken,
+        user_id: user.id,
+      },
+    });
+
+    sendEmailToResetPassword({ email, resetToken });
+    res
+      .status(200)
+      .json({ message: "Email is sent if the email address exists" });
   },
 );
 

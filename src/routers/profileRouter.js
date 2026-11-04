@@ -78,8 +78,6 @@ profileRouter.put(
   validateImage,
 
   async (req, res, next) => {
-    console.log("AUGELÖST");
-
     const { username, currentPassword, newPassword, emailNotifications } =
       matchedData(req);
 

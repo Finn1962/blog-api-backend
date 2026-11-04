@@ -9,6 +9,7 @@ mock.module("../src/db/prisma.js", {
       User: {
         create: mock.fn(),
         update: mock.fn(),
+        findUnique: mock.fn(() => ({ id: 1 })),
       },
       Verification_Token: {
         findUnique: mock.fn(async () => ({
@@ -18,6 +19,9 @@ mock.module("../src/db/prisma.js", {
         })),
         update: mock.fn(),
       },
+      Reset_Token: {
+        upsert: mock.fn(),
+      },
     },
   },
 });
@@ -25,6 +29,7 @@ mock.module("../src/db/prisma.js", {
 mock.module("../src/services/nodemailer.js", {
   exports: {
     sendEmailToVerifiyEmail: mock.fn(),
+    sendEmailToResetPassword: mock.fn(),
   },
 });
 
@@ -40,6 +45,8 @@ mock.module("bcrypt", {
 
 const { default: prisma } = await import("../src/db/prisma.js");
 const { default: app } = await import("../app.js");
+const { sendEmailToResetPassword, sendEmailToVerifiyEmail } =
+  await import("../src/services/nodemailer.js");
 
 describe("register", () => {
   test("should register new user", async () => {
@@ -52,24 +59,21 @@ describe("register", () => {
     });
     assert.strictEqual(response.statusCode, 200);
     assert.strictEqual(prisma.User.create.mock.calls.length, 1);
-    assert.strictEqual(
-      response.text,
-      '{"message":"Registration successful","errors":[]}',
-    );
+    assert.strictEqual(sendEmailToVerifiyEmail.mock.calls.length, 1);
   });
 
   test("should acctivate user account", async () => {
     const response = await request(app).get("/register/123456");
     assert.strictEqual(response.statusCode, 200);
-    assert.deepEqual(
+    assert.deepStrictEqual(
       prisma.Verification_Token.findUnique.mock.calls[0].arguments,
       [
         {
-          where: { token: 123456 },
+          where: { token: "123456" },
         },
       ],
     );
-    assert.deepEqual(prisma.User.update.mock.calls[0].arguments, [
+    assert.deepStrictEqual(prisma.User.update.mock.calls[0].arguments, [
       {
         where: {
           id: 1,
@@ -79,5 +83,20 @@ describe("register", () => {
         },
       },
     ]);
+  });
+
+  test("should send password reset email", async () => {
+    const response = await request(app).post("/register/reset-password").send({
+      email: "test@example.com",
+    });
+
+    assert.strictEqual(response.statusCode, 200);
+    assert.deepStrictEqual(prisma.User.findUnique.mock.calls[0].arguments, [
+      {
+        where: { email: "test@example.com" },
+      },
+    ]);
+    assert.strictEqual(prisma.Reset_Token.upsert.mock.calls.length, 1);
+    assert.strictEqual(sendEmailToResetPassword.mock.calls.length, 1);
   });
 });

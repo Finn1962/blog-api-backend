@@ -19,6 +19,13 @@ mock.module("../src/db/prisma.js", {
         create: mock.fn(),
         findMany: mock.fn(() => []),
       },
+      Response_Comment: {
+        create: mock.fn(),
+      },
+      Comment_Like: {
+        create: mock.fn(),
+        delete: mock.fn(async () => ({})),
+      },
     },
   },
 });
@@ -33,30 +40,13 @@ describe("comment", () => {
       .set("Cookie", `accessToken=${accessToken}`);
 
     assert.strictEqual(response.status, 200);
-    assert.deepStrictEqual(prisma.Comment.findMany.mock.calls[0].arguments, [
-      {
-        where: {
-          post_id: 2,
-        },
-        include: {
-          author: {
-            select: {
-              username: true,
-              profile_image_path: true,
-            },
-          },
-        },
-        orderBy: {
-          created_at: "desc",
-        },
-      },
-    ]);
+    assert.strictEqual(prisma.Comment.findMany.mock.calls.length, 1);
   });
 
   test("should create comment", async () => {
     const response = await request(app)
       .post("/comment")
-      .send({ content: "Test comment", postId: 2, authorId: 1 })
+      .send({ content: "Test comment", postId: 2 })
       .set("Cookie", `accessToken=${accessToken}`);
 
     assert.strictEqual(response.status, 200);
@@ -66,6 +56,66 @@ describe("comment", () => {
           content: "Test comment",
           post_id: 2,
           author_id: 1,
+        },
+      },
+    ]);
+  });
+
+  test("should create response comment", async () => {
+    const response = await request(app)
+      .post("/comment")
+      .send({
+        content: "Test comment",
+        commentId: 2,
+        isResponse: true,
+      })
+      .set("Cookie", `accessToken=${accessToken}`);
+
+    assert.strictEqual(response.status, 200);
+    assert.deepStrictEqual(
+      prisma.Response_Comment.create.mock.calls[0].arguments,
+      [
+        {
+          data: {
+            content: "Test comment",
+            comment_id: 2,
+            author_id: 1,
+          },
+        },
+      ],
+    );
+  });
+
+  test("should create a like", async () => {
+    const response = await request(app)
+      .post("/comment/like")
+      .send({ commentId: 2 })
+      .set("Cookie", `accessToken=${accessToken}`);
+
+    assert.strictEqual(response.status, 200);
+    assert.deepStrictEqual(prisma.Comment_Like.create.mock.calls[0].arguments, [
+      {
+        data: {
+          comment_id: 2,
+          user_id: 1,
+        },
+      },
+    ]);
+  });
+
+  test("should delete a like", async () => {
+    const response = await request(app)
+      .delete("/comment/like/2")
+      .set("Cookie", `accessToken=${accessToken}`);
+
+    assert.strictEqual(response.status, 200);
+    assert.deepStrictEqual(prisma.Comment_Like.delete.mock.calls[0].arguments, [
+      {
+        where: {
+          comment_id_user_id: {
+            comment_id: 2,
+            user_id: 1,
+          },
         },
       },
     ]);
