@@ -1,7 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import bcrypt from "bcrypt";
-import { body, param, matchedData } from "express-validator";
+import { body, matchedData } from "express-validator";
 import prisma from "../db/prisma.js";
 import {
   sendEmailToVerifiyEmail,
@@ -89,10 +89,10 @@ registerRouter.post(
   },
 );
 
-registerRouter.get(
-  "/:token",
+registerRouter.patch(
+  "/",
 
-  [param("token").notEmpty()],
+  [body("token").notEmpty()],
 
   validateInputs,
 
@@ -162,9 +162,10 @@ registerRouter.post(
     });
 
     if (!user)
-      return res
-        .status(200)
-        .json({ message: "Email is sent if the email address exists." });
+      return res.status(200).json({
+        message: "Email is sent if the email address exists",
+        errors: [],
+      });
 
     const resetToken = crypto.randomBytes(32).toString("hex");
 
@@ -183,9 +184,73 @@ registerRouter.post(
     });
 
     sendEmailToResetPassword({ email, resetToken });
+    res.status(200).json({
+      message: "Email is sent if the email address exists",
+      errors: [],
+    });
+  },
+);
+
+registerRouter.patch(
+  "/reset-password",
+
+  [
+    body("token").notEmpty(),
+    body("password")
+      .notEmpty()
+      .withMessage("Password is required")
+      .if(body("password").notEmpty())
+      .isLength({ min: 8, max: 32 })
+      .withMessage("Password must be between 8 and 32 characters"),
+    body("confirmPassword")
+      .notEmpty()
+      .withMessage("Confirm password")
+      .if(body("confirmPassword").notEmpty())
+      .custom((value, { req }) => {
+        if (value !== req.body.password) {
+          throw new Error("Passwords must match");
+        }
+        return true;
+      }),
+  ],
+
+  validateInputs,
+
+  async (req, res) => {
+    const { password, token } = matchedData(req);
+
+    const foundToken = await prisma.Reset_Token.findUnique({
+      where: { token },
+    });
+
+    if (!foundToken) {
+      return res.status(422).json({
+        message: "Saving password failed",
+        errors: [{ msg: "Invalid token" }],
+      });
+    }
+
+    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+    if (foundToken.created_at < fifteenMinutesAgo) {
+      return res.status(422).json({
+        message: "Saving password failed",
+        errors: [{ msg: "Token has expired" }],
+      });
+    }
+
+    await prisma.User.update({
+      where: { id: foundToken.user_id },
+      data: { password_hash: await bcrypt.hash(password, 12) },
+    });
+
+    await prisma.Reset_Token.update({
+      where: { token },
+      data: { is_used: true },
+    });
+
     res
       .status(200)
-      .json({ message: "Email is sent if the email address exists" });
+      .json({ message: "Password successfully saved", errors: [] });
   },
 );
 

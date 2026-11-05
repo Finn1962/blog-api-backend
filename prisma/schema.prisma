@@ -119,7 +119,7 @@ model Verification_Token {
 
 model Refresh_Token {
   id         Int        @id @default(autoincrement())
-  token      String
+  token      String     @unique
   user       User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
   user_id    Int        @unique
   created_at DateTime   @default(now())
@@ -127,8 +127,9 @@ model Refresh_Token {
 
 model Reset_Token {
   id         Int        @id @default(autoincrement())
-  token      String
+  token      String     @unique
   user       User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
   user_id    Int        @unique
   created_at DateTime   @default(now())
+  is_used    Boolean    @default(false)
 }

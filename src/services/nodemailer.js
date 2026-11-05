@@ -36,7 +36,7 @@ function sendEmailToResetPassword({ email, resetToken }) {
     from: "process.env.GOOGLE_ACC_EMAIL",
     to: email,
     subject: "Your reset email",
-    text: `Hello, click here to reset your password for CodersBlog: ${process.env.USER_FRONTEND_URL}verification/${resetToken}`,
+    text: `Hello, click here to reset your password for CodersBlog: ${process.env.USER_FRONTEND_URL}new-password/${resetToken}`,
   };
 
   transporter.sendMail(mailOptions, (error) => {

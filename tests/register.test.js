@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { test, mock, describe } from "node:test";
+import { test, mock, describe, beforeEach } from "node:test";
 import assert from "node:assert";
 import request from "supertest";
 
@@ -21,6 +21,12 @@ mock.module("../src/db/prisma.js", {
       },
       Reset_Token: {
         upsert: mock.fn(),
+        update: mock.fn(),
+        findUnique: mock.fn(async () => ({
+          user_id: 1,
+          created_at: new Date(Date.now()),
+          is_used: false,
+        })),
       },
     },
   },
@@ -48,6 +54,12 @@ const { default: app } = await import("../app.js");
 const { sendEmailToResetPassword, sendEmailToVerifiyEmail } =
   await import("../src/services/nodemailer.js");
 
+beforeEach(() => {
+  prisma.Verification_Token.findUnique.mock.resetCalls();
+  prisma.Reset_Token.findUnique.mock.resetCalls();
+  prisma.User.update.mock.resetCalls();
+});
+
 describe("register", () => {
   test("should register new user", async () => {
     const response = await request(app).post("/register").send({
@@ -62,8 +74,10 @@ describe("register", () => {
     assert.strictEqual(sendEmailToVerifiyEmail.mock.calls.length, 1);
   });
 
-  test("should acctivate user account", async () => {
-    const response = await request(app).get("/register/123456");
+  test("should activate user account", async () => {
+    const response = await request(app)
+      .patch("/register")
+      .send({ token: "123456" });
     assert.strictEqual(response.statusCode, 200);
     assert.deepStrictEqual(
       prisma.Verification_Token.findUnique.mock.calls[0].arguments,
@@ -85,6 +99,31 @@ describe("register", () => {
     ]);
   });
 
+  test("should not activate user account beecause token has expired", async () => {
+    prisma.Verification_Token.findUnique.mock.mockImplementationOnce(
+      async () => ({
+        user_id: 1,
+        created_at: new Date(Date.now() - 20 * 60 * 1000),
+        is_used: false,
+      }),
+    );
+
+    const response = await request(app)
+      .patch("/register")
+      .send({ token: "123456" });
+
+    assert.strictEqual(response.statusCode, 422);
+    assert.deepStrictEqual(
+      prisma.Verification_Token.findUnique.mock.calls[0].arguments,
+      [
+        {
+          where: { token: "123456" },
+        },
+      ],
+    );
+    assert.strictEqual(prisma.User.update.mock.calls.length, 0);
+  });
+
   test("should send password reset email", async () => {
     const response = await request(app).post("/register/reset-password").send({
       email: "test@example.com",
@@ -98,5 +137,49 @@ describe("register", () => {
     ]);
     assert.strictEqual(prisma.Reset_Token.upsert.mock.calls.length, 1);
     assert.strictEqual(sendEmailToResetPassword.mock.calls.length, 1);
+  });
+
+  test("should reset the password", async () => {
+    const response = await request(app).patch("/register/reset-password").send({
+      password: "test-password",
+      confirmPassword: "test-password",
+      token: "testToken1234",
+    });
+
+    assert.strictEqual(response.statusCode, 200);
+    assert.deepStrictEqual(
+      prisma.Reset_Token.findUnique.mock.calls[0].arguments,
+      [
+        {
+          where: { token: "testToken1234" },
+        },
+      ],
+    );
+    assert.strictEqual(prisma.User.update.mock.calls.length, 1);
+  });
+
+  test("should not reset password because token has expired", async () => {
+    prisma.Reset_Token.findUnique.mock.mockImplementationOnce(async () => ({
+      user_id: 1,
+      created_at: new Date(Date.now() - 20 * 60 * 1000),
+      is_used: false,
+    }));
+
+    const response = await request(app).patch("/register/reset-password").send({
+      password: "test-password",
+      confirmPassword: "test-password",
+      token: "testToken1234",
+    });
+
+    assert.strictEqual(response.statusCode, 422);
+    assert.deepStrictEqual(
+      prisma.Reset_Token.findUnique.mock.calls[0].arguments,
+      [
+        {
+          where: { token: "testToken1234" },
+        },
+      ],
+    );
+    assert.strictEqual(prisma.User.update.mock.calls.length, 0);
   });
 });
