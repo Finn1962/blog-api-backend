@@ -149,14 +149,21 @@ postRouter.get(
 
   authUser({ isOptional: true }),
 
-  [param("id").notEmpty().isInt().toInt()],
+  [
+    param("id").notEmpty().isInt().toInt(),
+    query("isPreview").optional().isBoolean().toBoolean(),
+  ],
 
   validateInputs,
 
   async (req, res) => {
-    const { id } = matchedData(req);
+    const { id, isPreview } = matchedData(req);
 
     const userRole = req.user?.role;
+
+    if (isPreview && (!userRole || userRole === "USER")) {
+      return res.status(401).json({ message: "No authorization" });
+    }
 
     let requestedStatus = { in: ["PUBLIC", "DRAFT"] };
     if (!userRole || userRole === "USER") requestedStatus = "PUBLIC";
@@ -170,7 +177,7 @@ postRouter.get(
       },
     });
 
-    if (post.image_path) {
+    if (post?.image_path) {
       const { data } = getImageURL(post.image_path);
       post.image_url = data.publicUrl;
     }
@@ -196,7 +203,7 @@ postRouter.post(
     const uploadedImage = await uploadImageToSupabase(req.image);
     if (uploadedImage.error) return next(uploadedImage.error);
 
-    await prisma.Post.create({
+    const post = await prisma.Post.create({
       data: {
         title,
         content,
@@ -212,6 +219,7 @@ postRouter.post(
 
     res.json({
       message: "Post created successfully",
+      post,
     });
   },
 );
@@ -284,12 +292,12 @@ postRouter.put(
       };
     }
 
-    await prisma.Post.update({
+    const updatedPost = await prisma.Post.update({
       where: { id },
       data,
     });
 
-    res.json({ message: "Post updated successfully" });
+    res.json({ message: "Post updated successfully", post: updatedPost });
   },
 );
 
