@@ -162,7 +162,7 @@ postRouter.get(
     const userRole = req.user?.role;
 
     if (isPreview && (!userRole || userRole === "USER")) {
-      return res.status(401).json({ message: "No authorization" });
+      return res.status(403).json({ message: "No authorization" });
     }
 
     let requestedStatus = { in: ["PUBLIC", "DRAFT"] };

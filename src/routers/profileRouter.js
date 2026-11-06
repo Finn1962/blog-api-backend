@@ -1,8 +1,9 @@
 import "dotenv/config";
 import express from "express";
-import { body, matchedData } from "express-validator";
+import { body, query, matchedData } from "express-validator";
 import prisma from "../db/prisma.js";
 import { authUser } from "../middleware/authUser.js";
+import { checkRole } from "../middleware/roleCheck.js";
 import { validateInputs } from "../middleware/inputValidation.js";
 import { validateImage } from "../middleware/imageValidation.js";
 import {
@@ -11,19 +12,81 @@ import {
   getImageURL,
 } from "../utils/supabase.js";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 
 const profileRouter = express.Router();
 
-profileRouter.use("/", authUser());
+profileRouter.get(
+  "/all",
+
+  authUser(),
+  checkRole(["ADMIN"]),
+
+  [
+    query("searchValue").optional().trim(),
+    query("role").optional().trim().toUpperCase(),
+    query("skip").optional().isInt().toInt(),
+    query("take").optional().isInt().toInt(),
+  ],
+
+  validateInputs,
+
+  async (req, res) => {
+    const { searchValue = "", role, skip, take } = matchedData(req);
+
+    let requestedRole = role;
+    if (role === "ALL") requestedRole = { in: ["USER", "AUTHOR", "ADMIN"] };
+
+    const where = {
+      AND: [
+        { username: { contains: searchValue, mode: "insensitive" } },
+        { role: requestedRole },
+      ],
+    };
+
+    const [totalUsersNumber, userDatas] = await Promise.all([
+      prisma.User.count({ where }),
+      prisma.User.findMany({
+        where,
+        skip,
+        take,
+        orderBy: {
+          id: "asc",
+        },
+      }),
+    ]);
+
+    userDatas.forEach((userData) => {
+      if (userData.profile_image_path) {
+        const { data } = getImageURL(userData.profile_image_path);
+        userData.profile_image_url = data.publicUrl;
+      }
+    });
+
+    res.status(200).json({ userDatas, totalUsersNumber });
+  },
+);
 
 profileRouter.get(
   "/",
 
+  authUser(),
+
+  [query("userId").optional().isInt().toInt()],
+
+  validateInputs,
+
   async (req, res) => {
+    const { userId } = matchedData(req);
+
+    const targetedUserId = userId || req.user.id;
+
+    if (targetedUserId !== req.user.id && req.user.role !== "ADMIN") {
+      return res.status(403).json({ message: "No authorisation" });
+    }
+
     const userData = await prisma.User.findUnique({
       where: {
-        id: jwt.decode(req.cookies.accessToken).id,
+        id: targetedUserId,
       },
     });
 
@@ -38,6 +101,8 @@ profileRouter.get(
 
 profileRouter.put(
   "/",
+
+  authUser(),
 
   [
     body("username").trim().notEmpty().withMessage("Username is required"),
@@ -72,18 +137,29 @@ profileRouter.put(
         return true;
       }),
     body("emailNotifications").toBoolean(),
+    query("userId").optional().isInt().toInt(),
   ],
 
   validateInputs,
   validateImage,
 
   async (req, res, next) => {
-    const { username, currentPassword, newPassword, emailNotifications } =
-      matchedData(req);
+    const {
+      username,
+      currentPassword,
+      newPassword,
+      emailNotifications,
+      userId,
+    } = matchedData(req);
+
+    const targetedUserId = userId || req.user.id;
+    if (targetedUserId !== req.user.id && req.user.role !== "ADMIN") {
+      return res.status(403).json({ message: "No authorisation" });
+    }
 
     const [user, isUsernameTaken] = await Promise.all([
       prisma.User.findUnique({
-        where: { id: req.user.id },
+        where: { id: targetedUserId },
       }),
       prisma.User.findFirst({
         where: {
@@ -132,7 +208,7 @@ profileRouter.put(
     if (deletedImage) data.profile_image_path = null;
 
     await prisma.User.update({
-      where: { id: req.user.id },
+      where: { id: targetedUserId },
       data,
     });
 

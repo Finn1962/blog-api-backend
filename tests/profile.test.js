@@ -5,7 +5,7 @@ import assert from "node:assert";
 
 import jwt from "jsonwebtoken";
 
-const payload = { id: 1, username: "test-user" };
+const payload = { id: 1, username: "test-user", role: "ADMIN" };
 
 const accessToken = jwt.sign(payload, process.env.JWT_SECRET_KEY, {
   expiresIn: "1h",
@@ -28,6 +28,8 @@ mock.module("../src/db/prisma.js", {
           id: 10,
         })),
         update: mock.fn(),
+        findMany: mock.fn(() => []),
+        count: mock.fn(() => 10),
       },
     },
   },
@@ -60,6 +62,15 @@ beforeEach(() => {
 });
 
 describe("profile", () => {
+  test("should get userdata from all users", async () => {
+    const response = await request(app)
+      .get("/profile/all")
+      .set("Cookie", `accessToken=${accessToken}`);
+
+    assert.strictEqual(response.statusCode, 200);
+    assert.strictEqual(prisma.User.findMany.mock.calls.length, 1);
+  });
+
   test("should get userdata", async () => {
     const response = await request(app)
       .get("/profile")
@@ -73,6 +84,25 @@ describe("profile", () => {
         },
       },
     ]);
+  });
+
+  test("should not get userdata, because of missing authorisation", async () => {
+    const editedPayload = { id: 1, username: "test-user", role: "AUTHOR" };
+
+    const editedAccessToken = jwt.sign(
+      editedPayload,
+      process.env.JWT_SECRET_KEY,
+      {
+        expiresIn: "1h",
+      },
+    );
+
+    const response = await request(app)
+      .get("/profile?userId=10")
+      .set("Cookie", `accessToken=${editedAccessToken}`);
+
+    assert.strictEqual(response.statusCode, 403);
+    assert.deepStrictEqual(prisma.User.findUnique.mock.calls.length, 0);
   });
 
   test("should update userdata", async () => {
