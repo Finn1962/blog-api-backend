@@ -1,6 +1,6 @@
 import "dotenv/config";
 import express from "express";
-import { body, query, matchedData } from "express-validator";
+import { body, query, matchedData, param } from "express-validator";
 import prisma from "../db/prisma.js";
 import { authUser } from "../middleware/authUser.js";
 import { checkRole } from "../middleware/roleCheck.js";
@@ -217,6 +217,40 @@ profileRouter.put(
     });
 
     res.json({ message: "User data successfully changed" });
+  },
+);
+
+profileRouter.delete(
+  "/:userId",
+
+  authUser(),
+  checkRole(["ADMIN"]),
+
+  [param("userId").notEmpty().isInt().toInt()],
+
+  validateInputs,
+
+  async (req, res, next) => {
+    const { userId } = matchedData(req);
+
+    console.log("wird ausgelöst");
+
+    const user = await prisma.User.findFirst({
+      where: {
+        id: userId,
+      },
+    });
+
+    const deletedImage = await deleteImageFromSupabase(user.profile_image_path);
+    if (deletedImage?.error) return next(deletedImage.error);
+
+    await prisma.User.delete({
+      where: {
+        id: userId,
+      },
+    });
+
+    res.json({ message: "User data successfully deleted" });
   },
 );
 

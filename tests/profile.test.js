@@ -30,6 +30,7 @@ mock.module("../src/db/prisma.js", {
         update: mock.fn(),
         findMany: mock.fn(() => []),
         count: mock.fn(() => 10),
+        delete: mock.fn(),
       },
     },
   },
@@ -129,5 +130,12 @@ describe("profile", () => {
         },
       },
     ]);
+  });
+
+  test("should delete user account", async () => {
+    const response = await request(app)
+      .delete("/profile/1")
+      .set("Cookie", `accessToken=${accessToken}`);
+    assert.strictEqual(response.statusCode, 200);
   });
 });
