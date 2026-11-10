@@ -233,8 +233,6 @@ profileRouter.delete(
   async (req, res, next) => {
     const { userId } = matchedData(req);
 
-    console.log("wird ausgelöst");
-
     const user = await prisma.User.findFirst({
       where: {
         id: userId,

@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import prisma from "../db/prisma.js";
 import { body, param, matchedData, query } from "express-validator";
 import sanitizeHtml from "sanitize-html";
+import { sendNotificationEmailToAllUsers } from "../services/nodemailer.js";
 import { validateInputs } from "../middleware/inputValidation.js";
 import { validateImage } from "../middleware/imageValidation.js";
 import { checkRole } from "../middleware/roleCheck.js";
@@ -217,35 +218,22 @@ postRouter.post(
       },
     });
 
+    if (status === "PUBLIC") {
+      const users = await prisma.User.findMany({
+        where: {
+          email_notifications: true,
+        },
+      });
+      sendNotificationEmailToAllUsers({
+        users,
+        postId: post.id,
+      });
+    }
+
     res.json({
       message: "Post created successfully",
       post,
     });
-  },
-);
-
-postRouter.delete(
-  "/:id",
-
-  authUser(),
-  checkRole(["AUTHOR", "ADMIN"]),
-
-  [param("id").isInt().toInt()],
-
-  validateInputs,
-
-  async (req, res, next) => {
-    const { id } = matchedData(req);
-
-    const post = await prisma.Post.findUnique({
-      where: { id },
-    });
-    const deletedImage = await deleteImageFromSupabase(post.image_path);
-    if (deletedImage.error) return next(deletedImage.error);
-
-    await prisma.Post.delete({ where: { id } });
-
-    res.json({ message: "Post deleted successfully" });
   },
 );
 
@@ -297,7 +285,48 @@ postRouter.put(
       data,
     });
 
+    if (status === "PUBLIC") {
+      const users = await prisma.User.findMany({
+        where: {
+          email_notifications: true,
+        },
+        select: {
+          email: true,
+          username: true,
+        },
+      });
+      sendNotificationEmailToAllUsers({
+        users,
+        postId: post.id,
+      });
+    }
+
     res.json({ message: "Post updated successfully", post: updatedPost });
+  },
+);
+
+postRouter.delete(
+  "/:id",
+
+  authUser(),
+  checkRole(["AUTHOR", "ADMIN"]),
+
+  [param("id").isInt().toInt()],
+
+  validateInputs,
+
+  async (req, res, next) => {
+    const { id } = matchedData(req);
+
+    const post = await prisma.Post.findUnique({
+      where: { id },
+    });
+    const deletedImage = await deleteImageFromSupabase(post.image_path);
+    if (deletedImage.error) return next(deletedImage.error);
+
+    await prisma.Post.delete({ where: { id } });
+
+    res.json({ message: "Post deleted successfully" });
   },
 );
 
