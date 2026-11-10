@@ -109,6 +109,7 @@ describe("profile", () => {
     const response = await request(app)
       .put("/profile")
       .set("Cookie", `accessToken=${accessToken}`)
+      .field("role", "user")
       .field("username", "test-user")
       .field("emailNotifications", true)
       .attach("image", dummyImageBuffer, {
@@ -121,6 +122,7 @@ describe("profile", () => {
       {
         where: { id: 1 },
         data: {
+          role: "USER",
           username: "test-user",
           email_notifications: true,
           profile_image_path: "test-path",

@@ -105,6 +105,7 @@ profileRouter.put(
   authUser(),
 
   [
+    body("role").notEmpty().toUpperCase(),
     body("username").trim().notEmpty().withMessage("Username is required"),
     body("currentPassword")
       .optional()
@@ -145,6 +146,7 @@ profileRouter.put(
 
   async (req, res, next) => {
     const {
+      role,
       username,
       currentPassword,
       newPassword,
@@ -153,6 +155,7 @@ profileRouter.put(
     } = matchedData(req);
 
     const targetedUserId = userId || req.user.id;
+
     if (targetedUserId !== req.user.id && req.user.role !== "ADMIN") {
       return res.status(403).json({ message: "No authorisation" });
     }
@@ -203,6 +206,7 @@ profileRouter.put(
       email_notifications: emailNotifications,
     };
 
+    if (req.user.role === "ADMIN") data.role = role;
     if (newPassword) data.password_hash = await bcrypt.hash(newPassword, 12);
     if (updatedImage) data.profile_image_path = updatedImage.data.path;
     if (deletedImage) data.profile_image_path = null;
