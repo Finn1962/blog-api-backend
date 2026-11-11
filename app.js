@@ -50,6 +50,10 @@ if (process.env.NODE_ENV !== "test") {
 
 app.use(passport.initialize());
 
+app.get("/", (req, res) => {
+  res.status(200).send("OK");
+});
+
 app.use("/register", registerRouter);
 
 app.use("/login", loginRouter);
