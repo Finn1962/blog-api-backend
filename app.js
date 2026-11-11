@@ -50,6 +50,14 @@ if (process.env.NODE_ENV !== "test") {
 
 app.use(passport.initialize());
 
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unbehandeltes Promise:", reason);
+});
+
+process.on("uncaughtException", (error) => {
+  console.error("Unerwarteter Fehler:", error);
+});
+
 app.use((req, res, next) => {
   console.log(`Eingehender Request: ${req.method} ${req.url}`);
   next();
