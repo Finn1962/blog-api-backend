@@ -50,6 +50,11 @@ if (process.env.NODE_ENV !== "test") {
 
 app.use(passport.initialize());
 
+app.use((req, res, next) => {
+  console.log(`Eingehender Request: ${req.method} ${req.url}`);
+  next();
+});
+
 app.get("/", (req, res) => {
   res.status(200).send("OK");
 });
