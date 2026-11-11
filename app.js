@@ -20,17 +20,24 @@ import commentRouter from "./src/routers/commentRouter.js";
 
 const app = express();
 
+const alowedOrigins = [
+  process.env.USER_FRONTEND_URL,
+  process.env.AUTHOR_FRONTEND_URL,
+]
+  .filter(Boolean)
+  .map((url) => url.replace(/\/$/, ""));
+
 app.use(
   cors({
-    origin: true,
+    origin: alowedOrigins,
     credentials: true,
   }),
 );
 
+app.use(express.json());
+
 const upload = multer({ storage: multer.memoryStorage() });
 app.use(upload.any());
-
-app.use(express.json());
 
 app.use(cookieParser());
 
