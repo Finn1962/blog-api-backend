@@ -41,24 +41,14 @@ app.use(upload.any());
 
 app.use(cookieParser());
 
-/*
 if (process.env.NODE_ENV !== "test") {
   refreshTokenCleanup();
   verificationTokenCleanup();
   resetTokenCleanup();
   accountCleanup();
 }
-*/
 
 app.use(passport.initialize());
-
-process.on("unhandledRejection", (reason, promise) => {
-  console.error("Unbehandeltes Promise:", reason);
-});
-
-process.on("uncaughtException", (error) => {
-  console.error("Unerwarteter Fehler:", error);
-});
 
 app.use((req, res, next) => {
   console.log(`Eingehender Request: ${req.method} ${req.url}`);
