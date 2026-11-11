@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "postinstall": "prisma generate",
     "test": "NODE_ENV=test node --experimental-test-module-mocks --test",
     "start": "node server.js"
   },
