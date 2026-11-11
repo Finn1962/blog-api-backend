@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "NODE_ENV=test node --experimental-test-module-mocks --test",
-    "build": "npx prisma generate",
+    "build": "npx prisma generate && npx prisma migrate deploy",
     "start": "node server.js"
   },
   "dependencies": {
