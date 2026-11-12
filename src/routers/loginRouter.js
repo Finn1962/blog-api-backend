@@ -54,8 +54,6 @@ loginRouter.post(
         },
       });
 
-      console.log("Login route abgeschlossen");
-
       return res
         .cookie("accessToken", accessToken, {
           httpOnly: true,
