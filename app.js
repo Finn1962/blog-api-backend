@@ -37,11 +37,6 @@ app.use(cookieParser());
 
 app.use(passport.initialize());
 
-app.use((req, res, next) => {
-  console.log(`Eingehender Request: ${req.method} ${req.url}`);
-  next();
-});
-
 app.get("/", (req, res) => {
   res.status(200).json({ status: "OK", message: "Server is running" });
 });
