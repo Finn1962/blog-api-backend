@@ -12,6 +12,8 @@ passport.use(
       try {
         const user = await prisma.User.findUnique({ where: { email } });
 
+        console.log("Nutzer: ", user);
+
         if (!user)
           return done(null, false, {
             message: "Incorrect login details",
@@ -23,6 +25,8 @@ passport.use(
           return done(null, false, {
             message: "Incorrect login details",
           });
+
+        console.log("Password stimmt: ", isMatch);
 
         return done(null, user);
       } catch (error) {

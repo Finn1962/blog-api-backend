@@ -46,7 +46,14 @@ app.get("/", (req, res) => {
 
 app.use("/register", registerRouter);
 
-app.use("/login", loginRouter);
+app.use(
+  "/login",
+  (req, res, next) => {
+    console.log("Login request erhalten");
+    next();
+  },
+  loginRouter,
+);
 
 app.use("/logout", logoutRouter);
 
