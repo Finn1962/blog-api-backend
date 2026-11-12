@@ -32,7 +32,7 @@ mock.module("../src/db/prisma.js", {
   },
 });
 
-mock.module("../src/services/nodemailer.js", {
+mock.module("../src/services/mailer.js", {
   exports: {
     sendEmailToVerifiyEmail: mock.fn(),
     sendEmailToResetPassword: mock.fn(),
@@ -52,7 +52,7 @@ mock.module("bcrypt", {
 const { default: prisma } = await import("../src/db/prisma.js");
 const { default: app } = await import("../app.js");
 const { sendEmailToResetPassword, sendEmailToVerifiyEmail } =
-  await import("../src/services/nodemailer.js");
+  await import("../src/services/mailer.js");
 
 beforeEach(() => {
   prisma.Verification_Token.findUnique.mock.resetCalls();

@@ -6,7 +6,7 @@ import prisma from "../db/prisma.js";
 import {
   sendEmailToVerifiyEmail,
   sendEmailToResetPassword,
-} from "../services/nodemailer.js";
+} from "../services/mailer.js";
 import { validateInputs } from "../middleware/inputValidation.js";
 import crypto from "crypto";
 

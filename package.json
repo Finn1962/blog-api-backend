@@ -45,7 +45,6 @@
     "@supabase/supabase-js": true,
     "multer@2.4.0": true,
     "sanitize-html@2.18.0": true,
-    "nodemailer@10.3.1": true,
     "resend@6.38.0": true
   },
   "description": "",
