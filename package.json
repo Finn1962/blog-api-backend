@@ -20,6 +20,7 @@
     "express-validator": "^7.3.2",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.4.0",
+    "node-cron": "^4.6.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
@@ -45,7 +46,8 @@
     "@supabase/supabase-js": true,
     "multer@2.4.0": true,
     "sanitize-html@2.18.0": true,
-    "resend@6.38.0": true
+    "resend@6.38.0": true,
+    "node-cron@4.6.0": true
   },
   "description": "",
   "main": "app.js",

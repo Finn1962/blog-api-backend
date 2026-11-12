@@ -5,6 +5,7 @@ import cors from "cors";
 import multer from "multer";
 import passport from "./src/utils/passport.js";
 import { errorHandeling } from "./src/middleware/errorHandeling.js";
+import { dbCleanup } from "./src/utils/dbCleanup.js";
 import loginRouter from "./src/routers/loginRouter.js";
 import logoutRouter from "./src/routers/logoutRouter.js";
 import postRouter from "./src/routers/postRouter.js";
@@ -36,6 +37,8 @@ app.use(upload.any());
 app.use(cookieParser());
 
 app.use(passport.initialize());
+
+if (process.env.NODE_ENV !== "test") dbCleanup();
 
 app.get("/", (req, res) => {
   res.status(200).json({ status: "OK", message: "Server is running" });

@@ -1,79 +1,77 @@
+import cron from "node-cron";
 import prisma from "../db/prisma.js";
 
-async function refreshTokenCleanup() {
-  const oneWeekAgo = new Date();
-  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+function dbCleanup() {
+  cron.schedule("*/10 * * * *", async () => {
+    try {
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-  const result = await prisma.Refresh_Token.deleteMany({
-    where: {
-      created_at: {
-        lte: oneWeekAgo, // kleiner oder gleich vor einer Woche
-      },
-    },
-  });
+      const oneDayAgo = new Date();
+      oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
-  if (result.count > 0) {
-    console.log(`[Cleanup] ${result.count} old refresh-tokens deleted`);
-  }
-}
+      const oneHourAgo = new Date();
+      oneHourAgo.setHours(oneHourAgo.getHours() - 1);
 
-async function verificationTokenCleanup() {
-  const oneDayAgo = new Date();
-  oneDayAgo.setDate(oneDayAgo.getDate() - 1);
-
-  const result = await prisma.Verification_Token.deleteMany({
-    where: {
-      created_at: {
-        lte: oneDayAgo,
-      },
-    },
-  });
-
-  if (result.count > 0) {
-    console.log(`[Cleanup] ${result.count} old verification-tokens deleted`);
-  }
-}
-
-async function resetTokenCleanup() {
-  const oneDayAgo = new Date();
-  oneDayAgo.setDate(oneDayAgo.getDate() - 1);
-
-  const result = await prisma.Reset_Token.deleteMany({
-    where: {
-      created_at: {
-        lte: oneDayAgo,
-      },
-    },
-  });
-
-  if (result.count > 0) {
-    console.log(`[Cleanup] ${result.count} old reset-tokens deleted`);
-  }
-}
-
-async function accountCleanup() {
-  const fifteenMinutesAgo = new Date();
-  fifteenMinutesAgo.setMinutes(fifteenMinutesAgo.getMinutes() - 15);
-
-  const result = await prisma.User.deleteMany({
-    where: {
-      AND: [
-        {
+      const refreshTokenResult = await prisma.Refresh_Token.deleteMany({
+        where: {
           created_at: {
-            lte: fifteenMinutesAgo,
+            lte: oneWeekAgo,
           },
         },
-        { is_verified: false },
-      ],
-    },
-  });
+      });
 
-  if (result.count > 0) {
-    console.log(`[Cleanup] ${result.count} accounts deleted`);
-  }
+      if (refreshTokenResult.count > 0)
+        console.log(
+          `[Cleanup] ${refreshTokenResult.count} old refresh-tokens deleted`,
+        );
+
+      const verificationTokenResult =
+        await prisma.Verification_Token.deleteMany({
+          where: {
+            created_at: {
+              lte: oneHourAgo,
+            },
+          },
+        });
+
+      if (verificationTokenResult.count > 0)
+        console.log(
+          `[Cleanup] ${verificationTokenResult.count} old verification-tokens deleted`,
+        );
+
+      const resetTokenResult = await prisma.Reset_Token.deleteMany({
+        where: {
+          created_at: {
+            lte: oneHourAgo,
+          },
+        },
+      });
+
+      if (resetTokenResult.count > 0)
+        console.log(
+          `[Cleanup] ${resetTokenResult.count} old reset-tokens deleted`,
+        );
+
+      const userResult = await prisma.User.deleteMany({
+        where: {
+          AND: [
+            {
+              created_at: {
+                lte: oneDayAgo,
+              },
+            },
+            { is_verified: false },
+          ],
+        },
+      });
+
+      if (userResult.count > 0)
+        console.log(`[Cleanup] ${userResult.count} accounts deleted`);
+    } catch (error) {
+      console.error(error);
+    }
+  });
 }
 
-refreshTokenCleanup();
-verificationTokenCleanup();
-resetTokenCleanup();
-accountCleanup();
+export { dbCleanup };
