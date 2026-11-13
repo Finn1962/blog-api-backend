@@ -55,17 +55,18 @@ model User {
 }
 
 model Post {
-  id          Int       @id @default(autoincrement())
-  title       String
-  content     String
-  prog_lang   PROG_LANG @default(JAVA_SCRIPT)
-  author      User      @relation(fields: [author_id], references: [id], onDelete: Cascade)
-  author_id   Int
-  status      Status    @default(DRAFT)
-  created_at  DateTime  @default(now())
-  comments    Comment[]
-  tags        Tag[]
-  image_path  String? 
+  id                Int       @id @default(autoincrement())
+  title             String
+  content           String
+  prog_lang         PROG_LANG @default(JAVA_SCRIPT)
+  author            User      @relation(fields: [author_id], references: [id], onDelete: Cascade)
+  author_id         Int
+  status            Status    @default(DRAFT)
+  send_notification Boolean   @default(false)
+  created_at        DateTime  @default(now())
+  comments          Comment[]
+  tags              Tag[]
+  image_path        String? 
 }
 
 model Tag {

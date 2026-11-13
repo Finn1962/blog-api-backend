@@ -1,6 +1,5 @@
 import "dotenv/config";
 import express from "express";
-import jwt from "jsonwebtoken";
 import prisma from "../db/prisma.js";
 import { body, param, matchedData, query } from "express-validator";
 import sanitizeHtml from "sanitize-html";
@@ -21,6 +20,7 @@ const postRouter = express.Router();
 const postValidation = [
   body("title").trim().notEmpty().withMessage("Title cannot be empty"),
   body("status").trim().notEmpty().toUpperCase(),
+  body("sendNotification").notEmpty().isBoolean().toBoolean(),
   body("progLang").trim().notEmpty().toUpperCase(),
   body("tags")
     .optional()
@@ -199,7 +199,8 @@ postRouter.post(
   validateImage,
 
   async (req, res, next) => {
-    const { title, content, status, progLang, tags } = matchedData(req);
+    const { title, content, status, sendNotification, progLang, tags } =
+      matchedData(req);
 
     const uploadedImage = await uploadImageToSupabase(req.image);
     if (uploadedImage.error) return next(uploadedImage.error);
@@ -208,8 +209,9 @@ postRouter.post(
       data: {
         title,
         content,
-        author_id: jwt.decode(req.cookies.accessToken).id,
+        author_id: req.user.id,
         status,
+        send_notification: sendNotification,
         prog_lang: progLang,
         image_path: uploadedImage.data ? uploadedImage.data.path : null,
         tags: {
@@ -218,7 +220,8 @@ postRouter.post(
       },
     });
 
-    if (status === "PUBLIC") {
+    if (status === "PUBLIC" && sendNotification) {
+      console.log("wird gesendet");
       const users = await prisma.User.findMany({
         where: {
           email_notifications: true,
@@ -247,7 +250,8 @@ postRouter.put(
   validateImage,
 
   async (req, res, next) => {
-    const { title, content, status, progLang, tags, id } = matchedData(req);
+    const { title, content, status, sendNotification, progLang, tags, id } =
+      matchedData(req);
 
     const post = await prisma.Post.findUnique({
       where: { id },
@@ -266,8 +270,8 @@ postRouter.put(
     const data = {
       title,
       content,
-      author_id: req.user.id,
       status,
+      send_notification: sendNotification,
       prog_lang: progLang,
     };
 
@@ -285,7 +289,8 @@ postRouter.put(
       data,
     });
 
-    if (status === "PUBLIC") {
+    if (status === "PUBLIC" && sendNotification) {
+      console.log("wird ausgelöst");
       const users = await prisma.User.findMany({
         where: {
           email_notifications: true,
