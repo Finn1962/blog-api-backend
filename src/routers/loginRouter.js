@@ -33,6 +33,12 @@ loginRouter.post(
         });
       }
 
+      if (!user.is_verified)
+        return res.status(401).json({
+          message: "Login failed",
+          errors: ["Email is not verified"],
+        });
+
       const payload = { id: user.id, username: user.username, role: user.role };
 
       const accessToken = jwt.sign(payload, process.env.JWT_SECRET_KEY, {
