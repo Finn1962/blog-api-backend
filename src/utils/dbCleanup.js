@@ -26,33 +26,6 @@ function dbCleanup() {
           `[Cleanup] ${refreshTokenResult.count} old refresh-tokens deleted`,
         );
 
-      const verificationTokenResult =
-        await prisma.Verification_Token.deleteMany({
-          where: {
-            created_at: {
-              lte: oneHourAgo,
-            },
-          },
-        });
-
-      if (verificationTokenResult.count > 0)
-        console.log(
-          `[Cleanup] ${verificationTokenResult.count} old verification-tokens deleted`,
-        );
-
-      const resetTokenResult = await prisma.Reset_Token.deleteMany({
-        where: {
-          created_at: {
-            lte: oneHourAgo,
-          },
-        },
-      });
-
-      if (resetTokenResult.count > 0)
-        console.log(
-          `[Cleanup] ${resetTokenResult.count} old reset-tokens deleted`,
-        );
-
       const userResult = await prisma.User.deleteMany({
         where: {
           AND: [

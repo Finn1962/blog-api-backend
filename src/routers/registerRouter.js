@@ -4,7 +4,6 @@ import bcrypt from "bcrypt";
 import { body, matchedData } from "express-validator";
 import prisma from "../db/prisma.js";
 import { validateInputs } from "../middleware/inputValidation.js";
-import crypto from "crypto";
 
 const registerRouter = express.Router();
 
@@ -16,9 +15,8 @@ registerRouter.post(
     body("email")
       .notEmpty()
       .withMessage("Email is required")
-      .isEmail()
-      .withMessage("A correct email format is required")
       .trim()
+      .isEmail()
       .normalizeEmail()
       .withMessage("Invalid email address"),
     body("password")
@@ -41,15 +39,8 @@ registerRouter.post(
 
   validateInputs,
 
-  (req, res, next) => {
-    console.log("WIRD AUSGELÖST");
-    next();
-  },
-
   async (req, res) => {
     const { username, email, password } = matchedData(req);
-
-    const verificationToken = crypto.randomBytes(32).toString("hex");
 
     try {
       await prisma.User.create({
@@ -57,11 +48,6 @@ registerRouter.post(
           username,
           email,
           password_hash: await bcrypt.hash(password, 12),
-          verification_token: {
-            create: {
-              token: verificationToken,
-            },
-          },
         },
       });
     } catch (error) {

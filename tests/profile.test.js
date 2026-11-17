@@ -125,7 +125,6 @@ describe("profile", () => {
         data: {
           role: "USER",
           username: "test-user",
-          email_notifications: true,
           profile_image_path: "test-path",
         },
       },
