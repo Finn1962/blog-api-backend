@@ -42,7 +42,7 @@ commentRouter.get(
         likes: { select: { user_id: true } },
       },
       orderBy: {
-        created_at: "desc",
+        created_at: "asc",
       },
     });
 
