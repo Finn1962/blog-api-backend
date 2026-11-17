@@ -21,6 +21,7 @@ registerRouter.post(
       .notEmpty()
       .withMessage("Email is required")
       .isEmail()
+      .withMessage("A correct email format is required")
       .trim()
       .normalizeEmail()
       .withMessage("Invalid email address"),
@@ -44,6 +45,11 @@ registerRouter.post(
   ],
 
   validateInputs,
+
+  (req, res, next) => {
+    console.log("WIRD AUSGELÖST");
+    next();
+  },
 
   async (req, res) => {
     const { username, email, password, sendEmailNotification } =

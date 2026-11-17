@@ -137,7 +137,6 @@ profileRouter.put(
         }
         return true;
       }),
-    body("emailNotifications").toBoolean(),
     query("userId").optional().isInt().toInt(),
   ],
 
@@ -145,14 +144,8 @@ profileRouter.put(
   validateImage,
 
   async (req, res, next) => {
-    const {
-      role,
-      username,
-      currentPassword,
-      newPassword,
-      emailNotifications,
-      userId,
-    } = matchedData(req);
+    const { role, username, currentPassword, newPassword, userId } =
+      matchedData(req);
 
     const targetedUserId = userId || req.user.id;
 
@@ -203,7 +196,6 @@ profileRouter.put(
 
     const data = {
       username,
-      email_notifications: emailNotifications,
     };
 
     if (req.user.role === "ADMIN") data.role = role;
