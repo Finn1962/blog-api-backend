@@ -7,10 +7,17 @@ import prisma from "../db/prisma.js";
 
 passport.use(
   new LocalStrategy(
-    { usernameField: "email" },
-    async (email, password, done) => {
+    { usernameField: "usernameOrEmail" },
+    async (usernameOrEmail, password, done) => {
       try {
-        const user = await prisma.User.findUnique({ where: { email } });
+        let user = await prisma.User.findUnique({
+          where: { username: usernameOrEmail },
+        });
+
+        if (!user)
+          user = await prisma.User.findUnique({
+            where: { email: usernameOrEmail },
+          });
 
         if (!user)
           return done(null, false, {

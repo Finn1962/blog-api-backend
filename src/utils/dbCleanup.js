@@ -25,22 +25,6 @@ function dbCleanup() {
         console.log(
           `[Cleanup] ${refreshTokenResult.count} old refresh-tokens deleted`,
         );
-
-      const userResult = await prisma.User.deleteMany({
-        where: {
-          AND: [
-            {
-              created_at: {
-                lte: oneDayAgo,
-              },
-            },
-            { is_verified: false },
-          ],
-        },
-      });
-
-      if (userResult.count > 0)
-        console.log(`[Cleanup] ${userResult.count} accounts deleted`);
     } catch (error) {
       console.error(error);
     }
