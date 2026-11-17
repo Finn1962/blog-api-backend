@@ -43,15 +43,11 @@ model User {
   created_at          DateTime        @default(now())
   role                Role            @default(USER)
   profile_image_path  String?        
-  email_notifications Boolean         @default(false)
   blogs               Post[]          
   comments            Comment[]
   likes               Comment_Like[]
   response_comments   Response_Comment[]
   refresh_token       Refresh_Token?
-  verification_token  Verification_Token?
-  reset_token         Reset_Token?
-  is_verified         Boolean         @default(false)
 }
 
 model Post {
@@ -109,28 +105,10 @@ model Comment_Like {
   @@unique([comment_id, user_id])
 }
 
-model Verification_Token {
-  id             Int        @id @default(autoincrement())
-  token          String     @unique
-  user           User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  user_id        Int        @unique
-  created_at     DateTime   @default(now())
-  is_used        Boolean    @default(false)
-}
-
 model Refresh_Token {
   id         Int        @id @default(autoincrement())
   token      String     @unique
   user       User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
   user_id    Int        @unique
   created_at DateTime   @default(now())
-}
-
-model Reset_Token {
-  id         Int        @id @default(autoincrement())
-  token      String     @unique
-  user       User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  user_id    Int        @unique
-  created_at DateTime   @default(now())
-  is_used    Boolean    @default(false)
 }

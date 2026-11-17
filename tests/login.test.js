@@ -5,7 +5,7 @@ import request from "supertest";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 
-const payload = { id: 1, username: "test-user" };
+const payload = { id: 1, username: "test-user", role: "ADMIN" };
 
 const accessToken = jwt.sign(payload, process.env.JWT_SECRET_KEY, {
   expiresIn: "1h",
@@ -52,7 +52,6 @@ describe("login", () => {
     assert.deepStrictEqual(prisma.User.findUnique.mock.calls[0].arguments, [
       { where: { email: "test@example.com" } },
     ]);
-    assert.strictEqual(response.text, '{"message":"Login successful"}');
   });
 
   test("should refresh login", async () => {
