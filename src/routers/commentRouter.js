@@ -38,11 +38,14 @@ commentRouter.get(
               },
             },
           },
+          orderBy: {
+            created_at: "desc",
+          },
         },
         likes: { select: { user_id: true } },
       },
       orderBy: {
-        created_at: "asc",
+        created_at: "desc",
       },
     });
 
