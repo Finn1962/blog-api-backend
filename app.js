@@ -17,7 +17,9 @@ const app = express();
 
 const alowedOrigins = [
   process.env.USER_FRONTEND_URL,
+  process.env.USER_FRONTEND_PREVIEW_URL,
   process.env.AUTHOR_FRONTEND_URL,
+  process.env.AUTHOR_FRONTEND_PREVIEW_URL,
 ]
   .filter(Boolean)
   .map((url) => url.replace(/\/$/, ""));
